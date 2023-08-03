@@ -16,6 +16,12 @@ using uint = uint32_t;
 template <typename T, class deleter = std::default_delete<T>>
 using uptr = std::unique_ptr<T, deleter>;
 
+template <typename T>
+using sptr = std::shared_ptr<T>;
+
+template <typename T>
+auto news = &std::make_shared<T>;
+
 inline uint xorshift32() {
 	thread_local static uint x = 0x6f9f;
 	x ^= x << 13;

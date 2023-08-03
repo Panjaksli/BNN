@@ -1,7 +1,12 @@
 #pragma once
 #include "Misc.h"
 namespace BNN {
-	enum Efun{ t_mse, t_mae };
+	class Efun {
+	public:
+		enum Type { t_mse, t_mae } type = t_mse;
+		Efun(){}
+		Efun(Type type) : type(type) {}
+	}; 
 	class Afun {
 	public:
 		enum Type { t_lin, t_relu, t_lrelu, t_sat, t_sig, t_clu, t_swish, t_tanh } type = t_relu;
