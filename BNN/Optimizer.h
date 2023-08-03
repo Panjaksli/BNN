@@ -62,7 +62,7 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("SGD","Nodes:", nodes.size());
+			println("SGD","\tNodes:", nodes.size());
 		}
 	};
 	class AGD : public Optimizer {
@@ -74,7 +74,7 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("AGD", "Nodes:", nodes.size());
+			println("AGD", "\tNodes:", nodes.size());
 		}
 		float mu = 0.9f;
 	};
@@ -87,7 +87,7 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("NAG", "Nodes:", nodes.size());
+			println("NAG", "\tNodes:", nodes.size());
 		}
 		float mu = 0.9f;
 	};
@@ -100,7 +100,7 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("RMSprop", "Nodes:", nodes.size());
+			println("RMSprop", "\tNodes:", nodes.size());
 		}
 		float beta = 0.9f, eps = 1e-6f;
 	};
@@ -114,7 +114,7 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("Adam", "Nodes:", nodes.size());
+			println("Adam", "\tNodes:", nodes.size());
 		}
 		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-6f;
 	};

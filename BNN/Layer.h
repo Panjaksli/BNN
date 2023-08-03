@@ -96,7 +96,7 @@ namespace BNN {
 			return true;
 		}
 		void print()const override {
-			println("Input:","Dim:", dim_y(0), dim_y(1), dim_y(2));
+			println("Input\t|", "\tIn:", dim_y(0), dim_y(1), dim_y(2), "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
 	private:
 		const Tensor& predict() override { return next->predict(); }
@@ -128,7 +128,7 @@ namespace BNN {
 			return in_eq_out();
 		}
 		void print()const override {
-			println("Output:", "In:", dim_x(0), dim_x(1), dim_x(2), "Out:", dim_y(0), dim_y(1), dim_y(2));
+			println("Output\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2), "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
 	private:
 		Tensor compute(const Tensor& x) const override {
@@ -167,7 +167,7 @@ namespace BNN {
 		idx sz_in() const override { return w.dimension(2); }
 		idx sz_out() const override { return w.dimension(1); }
 		void print()const override {
-			println("Dense:", "In:", dim_x(0), dim_x(1), dim_x(2), "Out:", dim_y(0), dim_y(1), dim_y(2));
+			println("Dense\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2), "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
 	private:
 		void _init() {
@@ -230,8 +230,8 @@ namespace BNN {
 		idx sz_in() const override { return din[0] * din[1] * din[2]; }
 		idx sz_out() const override { return b.size(); }
 		void print()const override {
-			println("Convol:", "In:", dim_x(0), dim_x(1), dim_x(2), 
-				"Out:", dim_y(0), dim_y(1), dim_y(2),"Kernel:",dim_w(1), dim_w(2),"Stride:", st[0],st[1], "Pad:", pa[0], pa[1]);
+			println("Convol\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2), 
+				"\tOut:", dim_y(0), dim_y(1), dim_y(2),"\tKernel:",dim_w(1), dim_w(2),"\tStride:", st[0],st[1], "\tPad:", pa[0], pa[1]);
 		}
 	private:
 		void _init() {
