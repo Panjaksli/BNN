@@ -56,6 +56,8 @@ namespace BNN {
 	inline constexpr idx c_dim(idx i, idx k, idx s, idx p) { return (i + 2 * p - k) / s + 1; }
 	inline constexpr idx t_dim(idx i, idx k, idx s, idx p) { return (i - 1) * s + k - 2 * p; }
 	inline constexpr idx c_pad(idx i, idx k, idx s, idx o) { return (i - 2 - o * s + s + k) / 2; }
+	inline constexpr idx t_pad(idx i, idx k, idx s, idx o) { return ((i - 1) * s - o + k) / 2; }
+	inline constexpr idx ti_pad(idx i, idx k, idx s, idx o) { return (k + s * (1 - i) + o - 2) / 2; }
 
 	inline Tensor& random_r(Tensor& c, float min = 0.f, float max = 1.f) {
 		c.setRandom();

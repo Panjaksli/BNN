@@ -14,9 +14,9 @@ vector<TYPE> nodes;\
 		}\
 	};\
 public:\
-void compile(Layer* output_node) override {\
+void compile(Layer* last) override {\
 	nodes.clear();\
-	build(output_node);\
+	build(last);\
 };\
 void get_grad() override { \
 	for (auto& n : nodes) {\
@@ -55,19 +55,20 @@ void reset_all() override {\
 	};
 	class SGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::SGD_node)
-			SGD(float alpha, idx n, Layer* output_node = nullptr) : Optimizer(alpha, n) { build(output_node); }
+			SGD(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha);
 			}
 		};
 		void print() override {
-			println("SGD","\tNodes:", nodes.size());
+			println("SGD", "\tNodes:", nodes.size());
 		}
 	};
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
-			AGD(float alpha, idx n, Layer* output_node = nullptr) : Optimizer(alpha, n) { build(output_node); }
+			AGD(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
+			AGD(float alpha, idx n,float mu, Layer* last = nullptr) : Optimizer(alpha, n),mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
@@ -80,7 +81,8 @@ void reset_all() override {\
 	};
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
-			NAG(float alpha, idx n, Layer* output_node = nullptr) : Optimizer(alpha, n) { build(output_node); }
+			NAG(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
+			NAG(float alpha, idx n, float mu, Layer* last = nullptr) : Optimizer(alpha, n), mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
@@ -93,7 +95,8 @@ void reset_all() override {\
 	};
 	class RMSprop : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::RMS_node)
-			RMSprop(float alpha, idx n, Layer* output_node = nullptr) : Optimizer(alpha, n) { build(output_node); }
+			RMSprop(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
+		RMSprop(float alpha, idx n, float b, float eps, Layer* last = nullptr) : Optimizer(alpha, n), beta(b), eps(eps) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, beta, eps);
@@ -107,7 +110,8 @@ void reset_all() override {\
 
 	class Adam : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::ADAM_node)
-			Adam(float alpha, idx n, Layer* output_node = nullptr) : Optimizer(alpha, n) { build(output_node); }
+			Adam(float alpha, idx n, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha, n), beta1(b1), beta2(b2), eps(eps) { build(last); }
+		Adam(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, beta1, beta2, eps);
