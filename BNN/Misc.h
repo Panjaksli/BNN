@@ -79,6 +79,15 @@ inline void print(T t, Ts... ts) {
 	print(ts...);
 }
 template <class T>
+inline void printr(T t) {
+	std::cout << t << "                                           \r";
+}
+template <class T, class ...Ts>
+inline void printr(T t, Ts... ts) {
+	print(t);
+	printr(ts...);
+}
+template <class T>
 inline void println(T t) {
 	std::cout << t << '\n';
 }

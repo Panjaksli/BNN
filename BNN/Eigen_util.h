@@ -27,6 +27,9 @@ namespace BNN {
 		operator auto() {
 			return std::array<idx, 3>{1, first, second};
 		}
+		friend shp2 operator-(shp2 x) { return shp2{ -x[0],-x[1] };}
+		friend shp2 operator+(shp2 x, shp2 y) { return shp2{ x[0] + y[0],x[1] + y[1] }; }
+		friend shp2 operator-(shp2 x, shp2 y) {return shp2{ x[0] - y[0],x[1] - y[1] };}
 		idx first;
 		idx second;
 	};
@@ -41,7 +44,7 @@ namespace BNN {
 		shp3(idx d1) : data{ 1,d1,1 } {}
 		shp3(idx d1, idx d2) : data{ 1,d1,d2 } {}
 		shp3(idx d1, idx d2, idx d3) : data{ d1,d2,d3 } {}
-		shp3(const dim1<3>& d): data(d){}
+		shp3(const dim1<3>& d) : data(d) {}
 		const idx& operator[](idx i) const { return data[i]; }
 		idx& operator[](idx i) { return data[i]; }
 		operator auto() {
@@ -50,9 +53,10 @@ namespace BNN {
 		dim1<3> data;
 	};
 	using shp4 = dim1<4>;
-	inline constexpr idx c_dim(idx is, idx ks, idx st, idx pa) { return (is + 2 * pa - ks) / st + 1; }
-	inline constexpr idx c_pad(idx os, idx is, idx ks, idx st) { return ((os - 1) - is + ks) / 2; }
-	inline constexpr idx c_rem(idx is, idx ks, idx st, idx pa) { return (is + 2 * pa - ks) % st; }
+	inline constexpr idx c_dim(idx i, idx k, idx s, idx p) { return (i + 2 * p - k) / s + 1; }
+	inline constexpr idx t_dim(idx i, idx k, idx s, idx p) { return (i - 1) * s + k - 2 * p; }
+	inline constexpr idx c_pad(idx i, idx k, idx s, idx o) { return (i - 2 - o * s + s + k) / 2; }
+
 	inline Tensor& random_r(Tensor& c, float min = 0.f, float max = 1.f) {
 		c.setRandom();
 		c = (max - min) * c + min;
@@ -109,13 +113,13 @@ namespace BNN {
 		return c;
 	}
 	inline Tensor& conv_r(Tensor& c, const Tensor& a, const Tensor& b, dim1<3> shape, shp2 str, shp2 pad) {
+		c.setZero();
 		idx d0 = b.dimension(0) / a.dimension(0);
 		dim1<2> st{str.first, str.second};
 		dim2<2> pa{ shp2{ pad.first, pad.first}, shp2{ pad.second, pad.second }};
-		auto y = c.reshape(shape).setZero();
-		for (int i = 0; i < d0; i++) {
-			for (int j = 0; j < a.dimension(0); j++) {
-				y.chip(i, 0) += a.chip(j, 0).pad(pa).convolve(b.chip(i * a.dimension(0) + j, 0), dim1<2>{0, 1}).stride(st);
+		for (int i = 0; i < d0; i++) { // 8 / 2 = 4
+			for (int j = 0; j < a.dimension(0); j++) { //2							
+				c.reshape(shape).chip(i, 0) += a.chip(j, 0).pad(pa).convolve(b.chip(i * a.dimension(0) + j, 0), dim1<2>{0, 1}).stride(st);
 			}
 		}
 		return c;
@@ -124,10 +128,9 @@ namespace BNN {
 	inline Tensor iconv_r(Tensor& c, const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
 		dim1<2> st{str.first, str.second};
 		dim2<2> pa{ shp2{ pad.first, pad.first}, shp2{ pad.second, pad.second }};
-		for (int i = 0; i < b.dimension(0); i++) {
-			auto x = b.chip(i, 0);
-			for (int j = 0; j < a.dimension(0); j++) {
-				c.chip(i * a.dimension(0) + j, 0) = a.chip(j, 0).pad(pa).convolve(x, dim1<2>{0, 1}).stride(st);
+		for (int i = 0; i < b.dimension(0); i++) { //4
+			for (int j = 0; j < a.dimension(0); j++) { //2
+				c.chip(i * a.dimension(0) + j, 0) = a.chip(j, 0).pad(pa).convolve(b.chip(i, 0), dim1<2>{0, 1}).stride(st);
 			}
 		}
 		return c;
@@ -159,11 +162,10 @@ namespace BNN {
 		dim1<2> ks{ker.first, ker.second};
 		float mult = (1.f / (ks[0] * ks[1]));
 		for (int i = 0; i < d0; i++) {
-			auto x = a.chip(i, 0);
 			for (int k = 0; k < d2; k++) {
 				for (int j = 0; j < d1; j++) {
 					dim1<2> off{j* st[0], k* st[1]};
-					fsca y = x.slice(off, ks).sum();
+					fsca y = a.chip(i, 0).slice(off, ks).sum();
 					c(i, j, k) = y(0) * mult;
 				}
 			}

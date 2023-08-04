@@ -39,9 +39,9 @@ namespace BNN {
 		virtual void save(std::ostream& os) const {}
 		virtual void load(std::istream& is) const {}
 		virtual void print() const {}
-		virtual bool compile(Layer* pnode, Layer* nnode) { 
-			set_prev(pnode); 
-			set_next(nnode); 
+		virtual bool compile(Layer* pnode, Layer* nnode) {
+			set_prev(pnode);
+			set_next(nnode);
 			return in_eq_out();
 		}
 	protected:
@@ -192,34 +192,42 @@ namespace BNN {
 		Convol(shp3 din, idx nch, shp2 ks, shp2 st, shp2 pa, Afun af = Afun::t_swish) : Convol(din, nch, ks, st, pa, nullptr, af) {}
 		Convol(shp3 din, idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev, Afun af = Afun::t_swish) :
 			Layer({ nch,c_dim(din[1],ks[0],st[0],pa[0]),c_dim(din[2],ks[1],st[1],pa[1]) }, prev),
-			dz(dim_y()), b(dim_y()),
-			w(din[0] * nch, ks[0], ks[1]), din(din),
-			st(st), pa(pa), af(af) {
+			dz(dim_y()), b(dim_y()), w(din[0] * nch, ks[0], ks[1]), din(din), ks(ks), st(st), pa(pa), af(af) {
 			_init();
 		}
 		Convol(idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev, Afun af = Afun::t_swish) :
-			Layer({ nch,c_dim(prev->dim_y(1),ks[0],st[0],pa[0]),c_dim(prev->dim_y(2),ks[1],st[1],pa[1])}, prev),
-			dz(dim_y()), b(dim_y()),
-			w(prev->dim_y(0)* nch, ks[0], ks[1]), din(prev->dim_y()),
-			st(st), pa(pa), af(af) {
+			Layer({ nch,c_dim(prev->dim_y(1),ks[0],st[0],pa[0]),c_dim(prev->dim_y(2),ks[1],st[1],pa[1]) }, prev),
+			dz(dim_y()), b(dim_y()), w(prev->dim_y(0)* nch, ks[0], ks[1]), din(prev->dim_y()), ks(ks), st(st), pa(pa), af(af) {
 			_init();
 		}
 		void init() override { _init(); }
 		void derivative() override {
 			dz = y() * dz;
-			idx p1 = c_pad(din[1], dim_b(1), dim_w(1), st.first);
-			idx p2 = c_pad(din[2], dim_b(2), dim_w(2), st.second);;
-			auto dy = dz.inflate(dim1<3>{ 1, st.first, st.second });
-			conv_r(x(), dy, w.reverse(dimx<bool, 3>{false, true, true}), din, { 1, 1 }, { p1, p2 });
+			idx p1 = c_pad(din[1], ks[0], st[0], dim_b(1));
+			idx p2 = c_pad(din[2], ks[1], st[1], dim_b(2));
+			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
+			conv_r(x(), dy, wr, din, { 1, 1 }, { p1, p2 });
 		}
 		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
 			dz = y() * dz;
+			// eg0. i=5; k=3, s=2, p=0, o=2
+			// eg1. i=5; k=3, s=2, p=1, o=3
+			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] }); //dy = o+(o-1)*(s-1)
+			//dy0 = 2 + 1 = 3  
+			//dy1 = 3 + (3 - 1) * (2 - 1) = 5
+			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			db += dz * inv_n;
-			dw += iconv(x().reshape(din), dz, st, pa) * inv_n;
-			idx p1 = c_pad(din[1], dim_b(1), dim_w(1), st.first);
-			idx p2 = c_pad(din[2], dim_b(2), dim_w(2), st.second);;
-			auto dy = dz.inflate(dim1<3>{ 1, st.first, st.second });
-			conv_r(x(), dy, w.reverse(dimx<bool, 3>{false, true, true}), din, { 1, 1 }, { p1, p2 });
+			//dw += iconv(x().reshape(din), dz, st, pa) * inv_n;
+			dw += iconv(x().reshape(din), dy, 1, pa) * inv_n; //w = 1 + (i - dy + 2 * p) / 1 
+			//w0 = 1 + (5 - 3 + 2 * 0) = 3 
+			//w1 = 1 + (5 - 5 + 2) = 3
+			//w0 = w1 !!!!!!!!
+			idx p1 = c_pad(din[1], ks[0], st[0], dim_b(1));
+			idx p2 = c_pad(din[2], ks[1], st[1], dim_b(2));
+			conv_r(x(), dy, wr, din, 1, { p1, p2 }); //i = 1 + (dy - k + 2p) / 1 ---> p = (i - 1 - dy + k) / 2
+			//p0 = (5 - 1 - 3 + 3) / 2 = 2
+			//p1 = (5 - 1 - 3 + 3) / 2 = 2
 		}
 		Tensor* get_w() override { return &w; }
 		Tensor* get_b() override { return &b; }
@@ -230,8 +238,8 @@ namespace BNN {
 		idx sz_in() const override { return din[0] * din[1] * din[2]; }
 		idx sz_out() const override { return b.size(); }
 		void print()const override {
-			println("Convol\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2), 
-				"\tOut:", dim_y(0), dim_y(1), dim_y(2),"\tKernel:",dim_w(1), dim_w(2),"\tStride:", st[0],st[1], "\tPad:", pa[0], pa[1]);
+			println("Convol\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2),
+				"\tOut:", dim_y(0), dim_y(1), dim_y(2), "\tKernel:", dim_w(1), dim_w(2), "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
 		}
 	private:
 		void _init() {
@@ -251,7 +259,73 @@ namespace BNN {
 		Tensor dz, b;
 		Tensor w;
 		dim1<3> din;
-		shp2 st, pa;
+		shp2 ks, st, pa;
+		Afun af;
+	};
+	class TConvol : public Layer {
+	public:
+		TConvol(shp3 din, idx nch, shp2 ks, shp2 st, shp2 pa, Afun af = Afun::t_swish) : TConvol(din, nch, ks, st, pa, nullptr, af) {}
+		TConvol(shp3 din, idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev, Afun af = Afun::t_swish) :
+			Layer({ nch,t_dim(din[1],ks[0],st[0],pa[0]),t_dim(din[2],ks[1],st[1],pa[1]) }, prev),
+			dz(dim_y()), b(dim_y()), w(din[0] * nch, ks[0], ks[1]), din(din), ks(ks), st(st), pa(pa), af(af) {
+			_init();
+		}
+		TConvol(idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev, Afun af = Afun::t_swish) :
+			Layer({ nch,t_dim(prev->dim_y(1),ks[0],st[0],pa[0]),t_dim(prev->dim_y(2),ks[1],st[1],pa[1]) }, prev),
+			dz(dim_y()), b(dim_y()), w(prev->dim_y(0)* nch, ks[0], ks[1]), din(prev->dim_y()), ks(ks), st(st), pa(pa), af(af) {
+			_init();
+		}
+		void init() override { _init(); }
+		void derivative() override {
+			dz = y() * dz;
+			idx p1 = c_pad(din[1], dim_b(1), ks[0], st[0]);
+			idx p2 = c_pad(din[2], dim_b(2), ks[1], st[1]);;
+			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
+			conv_r(x(), dy, wr, din, { 1, 1 }, { p1, p2 });
+		}
+		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+			dz = y() * dz;
+			db += dz * inv_n;
+			dw += iconv(x().reshape(din), dz, st, pa) * inv_n;
+			idx p1 = c_pad(din[1], dim_b(1), ks[0], st[0]);
+			idx p2 = c_pad(din[2], dim_b(2), ks[1], st[1]);
+			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
+			conv_r(x(), dy, wr, din, { 1, 1 }, { p1, p2 });
+		}
+		Tensor* get_w() override { return &w; }
+		Tensor* get_b() override { return &b; }
+		dim1<3> dim_w() const override { return w.dimensions(); }
+		dim1<3> dim_b() const override { return b.dimensions(); }
+		idx dim_w(idx i) const override { return w.dimension(i); }
+		idx dim_b(idx i) const override { return b.dimension(i); }
+		idx sz_in() const override { return din[0] * din[1] * din[2]; }
+		idx sz_out() const override { return b.size(); }
+		void print()const override {
+			println("Convol\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2),
+				"\tOut:", dim_y(0), dim_y(1), dim_y(2), "\tKernel:", dim_w(1), dim_w(2), "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
+		}
+	private:
+		void _init() {
+			b = b.setRandom() * 0.5f - 0.25f;
+			w = w.setRandom() * 0.5f - 0.25f;
+		}
+		Tensor compute(const Tensor& x) const override {
+			return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1) + b).unaryExpr(af.fx()));
+		}
+		const Tensor& predict() override {
+			auto ix = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
+			conv_r(y(), ix, w, 1, ks - pa - 1);
+			y() = y() + b;
+			dz = y().unaryExpr(af.dx());
+			y() = y().unaryExpr(af.fx());
+			return next->predict();
+		}
+		Tensor dz, b;
+		Tensor w;
+		dim1<3> din;
+		shp2 ks, st, pa;
 		Afun af;
 	};
 	class Maxpool : public Layer {
