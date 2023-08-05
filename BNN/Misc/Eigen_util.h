@@ -198,7 +198,6 @@ namespace BNN {
 		pool_max_r(c, a, ker, str);
 		return c;
 	}
-
 	inline Tensor pool_avg(const Tensor& a, shp2 ker = 2, shp2 str = 1, shp2 pad = 0) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], pad[0]);
@@ -207,6 +206,31 @@ namespace BNN {
 		pool_avg_r(c, a, ker, str, pad);
 		return c;
 	}
+	inline Tenarr pool_avg4(const Tenarr& a, shp2 ker = 2, shp2 str = 1, shp2 pad = 0) {
+		idx d0 = a.dimension(1);
+		idx d1 = c_dim(a.dimension(2), ker[0], str[0], pad[0]);
+		idx d2 = c_dim(a.dimension(3), ker[1], str[1], pad[1]);
+		Tensor c(d0, d1, d2);
+		Tenarr d(a.dimension(0), d0, d1, d2);
+		for(int i = 0; i < a.dimension(0); i++) {
+			pool_avg_r(c, a.chip(i, 0), ker, str, pad);
+			d.chip(i, 0) = c;
+		}
+		return d;
+	}
+	inline Tenarr pool_max4(const Tenarr& a, shp2 ker = 2, shp2 str = 1) {
+		idx d0 = a.dimension(1);
+		idx d1 = c_dim(a.dimension(2), ker[0], str[0], 0);
+		idx d2 = c_dim(a.dimension(3), ker[1], str[1], 0);
+		Tensor c(d0, d1, d2);
+		Tenarr d(a.dimension(0), d0, d1, d2);
+		for(int i = 0; i < a.dimension(0); i++) {
+			pool_max_r(c, a.chip(i, 0), ker, str);
+			d.chip(i, 0) = c;
+		}
+		return d;
+	}
+
 	template <class T>
 	inline void printnp(const T& t) {
 		print("Tensor");

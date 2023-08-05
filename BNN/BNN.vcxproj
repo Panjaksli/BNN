@@ -159,9 +159,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BNN.cpp" />
+    <ClCompile Include="Image\Image.cpp" />
     <ClCompile Include="NNet\NNet.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Image\Image.h" />
+    <ClInclude Include="Image\stb_image.h" />
+    <ClInclude Include="Image\stb_image_write.h" />
     <ClInclude Include="Misc\Afun.h" />
     <ClInclude Include="Layers\AvgPool.h" />
     <ClInclude Include="Layers\AvgUpool.h" />

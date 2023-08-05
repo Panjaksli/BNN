@@ -1,4 +1,3 @@
-#include <omp.h>
 #include "NNet.h"
 namespace BNN {
 	NNet::NNet(const NNet& cpy) {
@@ -38,7 +37,7 @@ namespace BNN {
 			println("Input data mismatch !");
 			return false;
 		}
-		else if(dim_x[1] * dim_x[2] * dim_x[3] != product(output->dim_out())) {
+		else if(dim_y[1] * dim_y[2] * dim_y[3] != product(output->dim_out())) {
 			println("Output data mismatch !");
 			return false;
 		}

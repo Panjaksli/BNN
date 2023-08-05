@@ -20,6 +20,9 @@ namespace BNN {
 		void Add_hidden(Layer* hidl) { if(hidl) { hidden.push_back(hidl); compiled = false; } }
 		void Rem_hidden() { hidden.pop_back(); compiled = false; }
 		void Rem_hidden(int id) { if(id < hidden.size()) { hidden.erase(hidden.begin() + id); compiled = false; } }
+		Tensor Compute(const Tensor& x) const {
+			return input->compute(x);
+		}
 	private:
 		void init() {
 			for(auto& h : hidden) {
