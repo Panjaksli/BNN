@@ -1,5 +1,5 @@
 #pragma once
-#include "Layers/Layer.h"
+#include "../Layers/Layer.h"
 namespace BNN {
 	namespace GD {
 		class SGD_node {

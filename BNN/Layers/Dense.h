@@ -31,6 +31,7 @@ namespace BNN {
 		void print()const override {
 			println("Dense\t|", "\tIn:", 1, dim_w(2), 1, "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
+		Dense* clone() const override { return new Dense(*this); }
 	private:
 		void _init() {
 			b = b.random() * 0.5f - 0.25f;

@@ -50,6 +50,7 @@ void reset_all() override {\
 		virtual void reset_cache() = 0;
 		virtual void reset_all() = 0;
 		virtual void print() = 0;
+		virtual Optimizer* clone() const = 0;
 		float alpha = 0.001f, inv_n = 1.f;
 	};
 	class SGD : public Optimizer {
@@ -61,35 +62,38 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("SGD", "\tRate:", alpha, "\tNodes:", nodes.size());
+			println("SGD", "\tRate:", alpha);
 		}
+		virtual SGD* clone() const override { return new SGD(*this); };
 	};
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
 			AGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
-			AGD(float alpha,float mu, Layer* last = nullptr) : Optimizer(alpha),mu(mu) { build(last); }
+		AGD(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("AGD", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
+			println("AGD", "\tRate:", alpha, "\tMu:", mu);
 		}
+		virtual AGD* clone() const override { return new AGD(*this); };
 		float mu = 0.9f;
 	};
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
 			NAG(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
-			NAG(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
+		NAG(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("NAG", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
+			println("NAG", "\tRate:", alpha, "\tMu:", mu);
 		}
+		virtual NAG* clone() const override { return new NAG(*this); };
 		float mu = 0.9f;
 	};
 	class RMSprop : public Optimizer {
@@ -102,8 +106,9 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tNodes:", nodes.size());
+			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tEps", eps);
 		}
+		virtual RMSprop* clone() const override { return new RMSprop(*this); };
 		float beta = 0.9f, eps = 1e-6f;
 	};
 
@@ -117,8 +122,11 @@ void reset_all() override {\
 			}
 		};
 		void print() override {
-			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tNodes:", nodes.size());
+			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps);
 		}
+		virtual Adam* clone() const override { return new Adam(*this); };
 		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-6f;
 	};
 }
+
+#undef COMMON_OPTIM_FUNCS

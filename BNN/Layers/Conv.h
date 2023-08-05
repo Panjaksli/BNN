@@ -48,12 +48,13 @@ namespace BNN {
 		dim1<3> dim_b() const override { return b.dimensions(); }
 		idx dim_w(idx i) const override { return w.dimension(i); }
 		idx dim_b(idx i) const override { return b.dimension(i); }
-		idx sz_in() const override { return din[0] * din[1] * din[2]; }
+		idx sz_in() const override { return product(din); }
 		dim1<3> dim_in() const override { return din; }
 		void print()const override {
 			println("Conv\t|", "\tIn:", din[0], din[1], din[2],
 				"\tOut:", dim_y(0), dim_y(1), dim_y(2), "\tKernel:", dim_w(1), dim_w(2), "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
 		}
+		Conv* clone() const override { return new Conv(*this);}
 	private:
 		void _init() {
 			b = b.random() * 0.5f - 0.25f;

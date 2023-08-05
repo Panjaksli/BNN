@@ -159,26 +159,25 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BNN.cpp" />
+    <ClCompile Include="NNet\NNet.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Afun.h" />
+    <ClInclude Include="Misc\Afun.h" />
     <ClInclude Include="Layers\AvgPool.h" />
     <ClInclude Include="Layers\AvgUpool.h" />
     <ClInclude Include="Layers\Conv.h" />
     <ClInclude Include="Layers\Dense.h" />
-    <ClInclude Include="Drafts.h" />
-    <ClInclude Include="Eigen_util.h" />
-    <ClInclude Include="GD_nodes.h" />
+    <ClInclude Include="Misc\Eigen_util.h" />
+    <ClInclude Include="NNet\GD_nodes.h" />
     <ClInclude Include="Layers\Dropout.h" />
     <ClInclude Include="Layers\Input.h" />
     <ClInclude Include="Layers\Layer.h" />
     <ClInclude Include="Layers\Layers.h" />
     <ClInclude Include="Layers\TConv.h" />
-    <ClInclude Include="Misc.h" />
-    <ClInclude Include="NNet.h" />
-    <ClInclude Include="Optimizer.h" />
+    <ClInclude Include="Misc\Misc.h" />
+    <ClInclude Include="NNet\NNet.h" />
+    <ClInclude Include="NNet\Optimizer.h" />
     <ClInclude Include="Layers\Output.h" />
-    <ClInclude Include="Tensor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

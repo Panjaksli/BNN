@@ -39,6 +39,7 @@ namespace BNN {
 		void print()const override {
 			println("Input\t|", "\tIn:", dim_y(0), dim_y(1), dim_y(2), "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
+		Input* clone() const override { return new Input(*this); }
 	private:
 		const Tensor& predict() override { return next->predict(); }
 	};

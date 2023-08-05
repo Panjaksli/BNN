@@ -53,6 +53,7 @@ namespace BNN {
 		}
 		dim1<3> data;
 	};
+	inline idx product(const dim1<3> &x) { return x[0] * x[1] * x[2]; }
 	using shp4 = dim1<4>;
 	inline constexpr idx c_dim(idx i, idx k, idx s, idx p) { return (i + 2 * p - k) / s + 1; }
 	inline constexpr idx t_dim(idx i, idx k, idx s, idx p) { return (i - 1) * s + k - 2 * p; }
@@ -206,15 +207,20 @@ namespace BNN {
 		pool_avg_r(c, a, ker, str, pad);
 		return c;
 	}
-	
-	inline void print_np(const auto& ten) {
+	template <class T>
+	inline void printnp(const T& t) {
 		print("Tensor");
-		for (int i = 0; i < ten.NumDimensions; i++) {
-			print(ten.dimension(i));
+		for(int i = 0; i < t.NumDimensions; i++) {
+			print(t.dimension(i));
 		}
 		print("\n");
-		println(ten.format(Eigen::TensorIOFormat::Numpy()));
+		println(t.format(Eigen::TensorIOFormat::Numpy()));
 		print("\n-------------------------------\n");
+	}
+	template <class T, class ...Ts>
+	inline void printnp(const T& t, Ts... ts) {
+		printnp(t);
+		printnp(ts...);
 	}
 }
 

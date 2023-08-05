@@ -18,33 +18,30 @@
     <ClCompile Include="BNN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NNet\NNet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Misc.h">
+    <ClInclude Include="Misc\Misc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Layers\Layer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Afun.h">
+    <ClInclude Include="Misc\Afun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Eigen_util.h">
+    <ClInclude Include="Misc\Eigen_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Tensor.h">
+    <ClInclude Include="NNet\Optimizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Optimizer.h">
+    <ClInclude Include="NNet\GD_nodes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Drafts.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GD_nodes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NNet.h">
+    <ClInclude Include="NNet\NNet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Layers\Dense.h">

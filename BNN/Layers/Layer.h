@@ -1,14 +1,16 @@
 #pragma once
-#include "../Eigen_util.h"
-#include "../Afun.h"
+#include "../Misc/Eigen_util.h"
+#include "../Misc/Afun.h"
 namespace BNN {
 	class Layer {
 	public:
 		Layer() {}
 		Layer(dim1<3> dims, Layer* _prev = nullptr) : a(dims), prev(_prev) { if (prev)prev->set_next(this); }
 		virtual ~Layer() {}
-		//init weights, biases etc...
+		//random init weights, biases etc...
 		virtual void init() {}
+		//zero weights/biases
+		void zero() { if(get_w()) get_w()->setZero(); if(get_b()) get_b()->setZero();}
 		//update the filter -> currently just dropout layer
 		virtual void update() {}
 		//thread safe but slower
@@ -70,6 +72,7 @@ namespace BNN {
 			if (next) return next->last();
 			else return this;
 		}
+		virtual Layer* clone() const = 0;
 	protected:
 		void set_next(Layer* node) { next = node; }
 		void set_prev(Layer* node) { prev = node; }

@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include "Layer.h"
 namespace BNN {
 	//Can be used for either unpooling or upsampling
@@ -18,12 +17,13 @@ namespace BNN {
 			idx p2 = t_pad(din[2], ks[1], st[1], dim_y(2));
 			x() = pool_avg(y(), ks, st, { p1,p2 }).reshape(dim_x());
 		}
-		idx sz_in() const override { return din[0] * din[1] * din[2]; }
+		idx sz_in() const override { return product(din); }
 		dim1<3> dim_in() const override { return din; }
 		void print()const override {
 			println("AvgUpl\t|", "\tIn:", din[0], din[1], din[2],
 				"\tOut:", dim_y(0), dim_y(1), dim_y(2), "\tKernel:", dim_w(1), dim_w(2), "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
 		}
+		AvgUpool* clone() const override { return new AvgUpool(*this); }
 	private:
 		Tensor compute(const Tensor& x) const override {
 			return pool_avg(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), ks, 1, ks - pa - 1);

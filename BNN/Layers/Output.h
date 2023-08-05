@@ -24,6 +24,7 @@ namespace BNN {
 		void print()const override {
 			println("Output\t|", "\tIn:", dim_x(0), dim_x(1), dim_x(2), "\tOut:", dim_y(0), dim_y(1), dim_y(2));
 		}
+		Output* clone() const override { return new Output(*this); }
 	private:
 		Tensor compute(const Tensor& x) const override {
 			return x.reshape(dim_y()).unaryExpr(af.fx());
