@@ -6,6 +6,30 @@ namespace BNN {
 		enum Type { t_mse, t_mae } type = t_mse;
 		Efun(){}
 		Efun(Type type) : type(type) {}
+		inline auto fx() const {
+			switch (type) {
+			case t_mse: return mse::fx;
+			case t_mae: return mae::fx;
+			default: return mse::fx;
+			}
+		}
+		inline auto dx() const {
+			switch (type) {
+			case t_mse: return mse::dx;
+			case t_mae: return mae::dx;
+			default: return mse::dx;
+			}
+		}
+		struct mse {
+			static float fx(float x, float y) { return (x - y) * (x - y); }
+			static float dx(float x, float y) { return 2.f * (x - y); }
+			static constexpr Type type = t_mse;
+		};
+		struct mae {
+			static float fx(float x, float y) { return abs(x-y); }
+			static float dx(float x, float y) { return copysignf(1.f,x-y); }
+			static constexpr Type type = t_mae;
+		};
 	}; 
 	class Afun {
 	public:

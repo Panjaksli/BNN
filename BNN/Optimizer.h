@@ -8,8 +8,7 @@ vector<TYPE> nodes;\
 		if (!node||!node->prev) return; \
 		Layer* curr = node->prev;\
 		while (curr->prev) {\
-			if(curr->get_w()) nodes.push_back(curr); \
-		    else nodes.push_back(TYPE()); \
+			nodes.push_back(curr); \
 			curr = curr->prev;\
 		}\
 	};\
@@ -42,7 +41,7 @@ void reset_all() override {\
 	class Optimizer {
 	public:
 		Optimizer() {}
-		Optimizer(float alpha, idx n) : alpha(alpha), inv_n(1.f / n) {}
+		Optimizer(float alpha) : alpha(alpha) {}
 		virtual ~Optimizer() {}
 		virtual void compile(Layer* last) = 0;
 		virtual void get_grad() = 0;
@@ -55,70 +54,70 @@ void reset_all() override {\
 	};
 	class SGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::SGD_node)
-			SGD(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
+			SGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha);
 			}
 		};
 		void print() override {
-			println("SGD", "\tNodes:", nodes.size());
+			println("SGD", "\tRate:", alpha, "\tNodes:", nodes.size());
 		}
 	};
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
-			AGD(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
-			AGD(float alpha, idx n,float mu, Layer* last = nullptr) : Optimizer(alpha, n),mu(mu) { build(last); }
+			AGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			AGD(float alpha,float mu, Layer* last = nullptr) : Optimizer(alpha),mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("AGD", "\tNodes:", nodes.size());
+			println("AGD", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
 		}
 		float mu = 0.9f;
 	};
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
-			NAG(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
-			NAG(float alpha, idx n, float mu, Layer* last = nullptr) : Optimizer(alpha, n), mu(mu) { build(last); }
+			NAG(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			NAG(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("NAG", "\tNodes:", nodes.size());
+			println("NAG", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
 		}
 		float mu = 0.9f;
 	};
 	class RMSprop : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::RMS_node)
-			RMSprop(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
-		RMSprop(float alpha, idx n, float b, float eps, Layer* last = nullptr) : Optimizer(alpha, n), beta(b), eps(eps) { build(last); }
+			RMSprop(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+		RMSprop(float alpha, float b, float eps, Layer* last = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, beta, eps);
 			}
 		};
 		void print() override {
-			println("RMSprop", "\tNodes:", nodes.size());
+			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tNodes:", nodes.size());
 		}
 		float beta = 0.9f, eps = 1e-6f;
 	};
 
 	class Adam : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::ADAM_node)
-			Adam(float alpha, idx n, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha, n), beta1(b1), beta2(b2), eps(eps) { build(last); }
-		Adam(float alpha, idx n, Layer* last = nullptr) : Optimizer(alpha, n) { build(last); }
+			Adam(float alpha, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(last); }
+		Adam(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		void update_grad() override {
 			for (auto& n : nodes) {
 				n.update_grad(alpha, beta1, beta2, eps);
 			}
 		};
 		void print() override {
-			println("Adam", "\tNodes:", nodes.size());
+			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tNodes:", nodes.size());
 		}
 		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-6f;
 	};

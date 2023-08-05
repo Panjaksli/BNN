@@ -1,11 +1,11 @@
 #pragma once
-#include "Layer.h"
+#include "Layers/Layer.h"
 namespace BNN {
 	namespace GD {
 		class SGD_node {
 		public:
 			SGD_node() : layer(nullptr), valid(0) {}
-			SGD_node(Layer* layer) : dw(layer->dim_w()), db(layer->dim_b()), layer(layer), valid(1) { init(); }
+			SGD_node(Layer* layer) : dw(layer->dim_w()), db(layer->dim_b()), layer(layer), valid(dw.size()&&db.size()) { init(); }
 			void get_grad(float inv_n) {
 				if (valid)layer->gradient(dw, db, inv_n);
 				else layer->derivative();
@@ -16,6 +16,7 @@ namespace BNN {
 					update(*layer->get_b(), db, alpha);
 					reset_grad();
 				}
+				layer->update();
 			}
 			void reset_grad() {
 				if (valid)init();
@@ -48,6 +49,7 @@ namespace BNN {
 					update(*layer->get_b(), vb, db, alpha, mu);
 					reset_grad();
 				}
+				layer->update();
 			}
 			void reset_cache() {
 				if (valid) init();
@@ -77,6 +79,7 @@ namespace BNN {
 					update(*layer->get_b(), vb, db, alpha, mu);
 					reset_grad();
 				}
+				layer->update();
 			}
 			void reset_cache() {
 				if (valid)
@@ -106,6 +109,7 @@ namespace BNN {
 					update(*layer->get_b(), vb, db, alpha, beta, eps);
 					reset_grad();
 				}
+				layer->update();
 			}
 			void reset_cache() {
 				if (valid) init();
@@ -134,6 +138,7 @@ namespace BNN {
 					update(*layer->get_b(), mb, vb, db, alpha, beta1, beta2, eps);
 					reset_grad();
 				}
+				layer->update();
 			}
 			void reset_cache() {
 				if (valid)

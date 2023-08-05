@@ -13,14 +13,14 @@ using std::clamp;
 
 using uint = uint32_t;
 
-template <typename T, class deleter = std::default_delete<T>>
-using uptr = std::unique_ptr<T, deleter>;
-
-template <typename T>
-using sptr = std::shared_ptr<T>;
-
-template <typename T>
-auto news = &std::make_shared<T>;
+//template <typename T, class deleter = std::default_delete<T>>
+//using uptr = std::unique_ptr<T, deleter>;
+//
+//template <typename T>
+//using sptr = std::shared_ptr<T>;
+//
+//template <typename T>
+//auto news = &std::make_shared<T>;
 
 inline uint xorshift32() {
 	thread_local static uint x = 0x6f9f;
@@ -65,8 +65,7 @@ inline double timer() {
 	return std::chrono::duration<double>(t.time_since_epoch()).count();
 }
 inline double timer(double t1) {
-	auto t = std::chrono::high_resolution_clock::now();
-	return std::chrono::duration<double>(t.time_since_epoch()).count() - t1;
+	return timer() - t1;
 }
 
 template <class T>

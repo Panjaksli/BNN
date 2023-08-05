@@ -1,6 +1,6 @@
 #pragma once
 #include "Optimizer.h"
-#include "Layer.h"
+#include "Layers/Layers.h"
 #include "Afun.h"
 namespace BNN {
 	class NNet {
@@ -27,7 +27,7 @@ namespace BNN {
 				input->compile(nullptr, hidden[0]);
 				for (idx i = 0; i < hidden.size(); i++) {
 					if (!hidden[i]->compile(i == 0 ? input : hidden[i - 1], i < hidden.size() - 1 ? hidden[i + 1] : output)) {
-						println("Error:  Dimension mismatch in node: ", i, "!");
+						println("Error:  Dimension mismatch in node: ", i, "!", "Prev nodes:", hidden[i]->sz_x(), "This nodes:", hidden[i]->prev->sz_in());
 						return compiled = false;
 					}
 				}
@@ -41,9 +41,8 @@ namespace BNN {
 			print();
 			return compiled = true;
 		}
-		bool train(const Tenarr& x0, const Tenarr& y0, float rate = 0.001f, idx epochs = 1000, int nlog = 100) {
+		bool train(const Tenarr& x0, const Tenarr& y0, idx epochs = 1000, int nlog = 100) {
 			if (!valid()) return false;
-			optimizer->alpha = rate;
 			optimizer->inv_n = 1.f / x0.dimension(0);
 			optimizer->reset_all();
 			double t = timer();

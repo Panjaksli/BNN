@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>ClangCL</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -162,13 +162,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Afun.h" />
+    <ClInclude Include="Layers\AvgPool.h" />
+    <ClInclude Include="Layers\AvgUpool.h" />
+    <ClInclude Include="Layers\Conv.h" />
+    <ClInclude Include="Layers\Dense.h" />
     <ClInclude Include="Drafts.h" />
     <ClInclude Include="Eigen_util.h" />
     <ClInclude Include="GD_nodes.h" />
-    <ClInclude Include="Layer.h" />
+    <ClInclude Include="Layers\Dropout.h" />
+    <ClInclude Include="Layers\Input.h" />
+    <ClInclude Include="Layers\Layer.h" />
+    <ClInclude Include="Layers\Layers.h" />
+    <ClInclude Include="Layers\TConv.h" />
     <ClInclude Include="Misc.h" />
     <ClInclude Include="NNet.h" />
     <ClInclude Include="Optimizer.h" />
+    <ClInclude Include="Layers\Output.h" />
     <ClInclude Include="Tensor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
