@@ -5,7 +5,6 @@ namespace BNN {
 	enum LType {
 		T_None, t_Input, t_Output, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout
 	};
-
 	class Layer {
 	public:
 		Layer() {}
@@ -26,9 +25,9 @@ namespace BNN {
 		virtual const Tensor& predict() = 0;
 		virtual const Tensor& predict(const Tensor& x) { return next->predict(x); };
 		//propagates gradient backwards
-		virtual void derivative() {}
+		virtual void derivative(bool ptrain) {}
 		//propagates gradient and accumulates weights/filter
-		virtual void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) {}
+		virtual void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) {}
 		virtual LType type() const = 0;
 		LType ptype()const { return prev ? prev->type() : T_None; }
 		LType ntype()const { return next ? next->type() : T_None; }
@@ -57,6 +56,7 @@ namespace BNN {
 		virtual dim1<3> bdims() const { return { 0,0,0 }; }
 		idx wdim(idx i) const { return wdims()[i]; }
 		idx bdim(idx i) const { return bdims()[i]; }
+		bool trainable() const { return type() == t_Conv || type() == t_TConv || type() == t_Dense;}
 		virtual void save(std::ostream& os) const {}
 		virtual void print() const {}
 		bool compile(Layer* pnode, Layer* nnode) {

@@ -8,13 +8,13 @@ namespace BNN {
 		Output(shp3 d, Layer* prev = nullptr, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) : Layer(d, prev), ef(ef), af(af) {}
 		Output(Layer* prev, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) : Layer(prev->odims(), prev), ef(ef), af(af) {}
 		const Tensor& output() const { return y(); }
-		void derivative() override {
-			if(ptype() != t_Input) x() = y().reshape(pdims());
+		void derivative(bool ptrain) override {
+			if(ptrain) x() = y().reshape(pdims());
 		}
 		float error(const Tensor& y0) override {
 			float cost = 0;
 			cost = fsca(y().binaryExpr(y0, ef.fx()).mean()).coeff();
-			if(ptype() != t_Input) x() = y().binaryExpr(y0, ef.dx()).reshape(pdims());
+			x() = y().binaryExpr(y0, ef.dx()).reshape(pdims());
 			return cost;
 		}
 		void print()const override {

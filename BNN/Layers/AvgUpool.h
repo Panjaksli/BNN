@@ -15,9 +15,9 @@ namespace BNN {
 			w(1, ks[0], ks[1]), din(pdims()), ks(ks), st(st), pa(pa) {
 			_init();
 		}
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			w.setConstant(1.f / w.size());
-			if(ptype() != t_Input) aconv_r(x().reshape(din), y(), w, st, pa);
+			if(ptrain) aconv_r(x().reshape(din), y(), w, st, pa);
 		}
 		void print()const override {
 			println("AvgUpl\t|", "\tIn:", din[0], din[1], din[2],

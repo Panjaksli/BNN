@@ -15,18 +15,18 @@ namespace BNN {
 			_init();
 		}
 		void init() override { _init(); }
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			dz = y() * dz;
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(ptype() != t_Input) conv_r(x().reshape(din), dz, wr, st, pa);
+			if(ptrain) conv_r(x().reshape(din), dz, wr, st, pa);
 		}
-		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz;
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			auto dx = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
 			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions())* inv_n;
 			dw += iconv(dx, dz, 1, ks - pa - 1) * inv_n;
-			if(ptype() != t_Input) conv_r(x().reshape(din), dz, wr, st, pa);
+			if(ptrain) conv_r(x().reshape(din), dz, wr, st, pa);
 		}
 		void print()const override {
 			println("TConv\t|", "\tIn:", din[0], din[1], din[2],
