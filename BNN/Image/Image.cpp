@@ -1,11 +1,15 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include "Image.h"
 namespace BNN {
 	Tensor Image::tensor() const {
-		Tensor res(n, h, w);
+		//pad to multiple of 2
+		Tensor res(n, h + h % 2, w + w % 2);
 		for(int j = 0; j < w; j++) {
 			for(int i = 0; i < h; i++) {
 				for(int k = 0; k < n; k++) {

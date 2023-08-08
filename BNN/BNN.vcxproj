@@ -161,6 +161,7 @@
     <ClCompile Include="BNN.cpp" />
     <ClCompile Include="Image\Image.cpp" />
     <ClCompile Include="NNet\NNet.cpp" />
+    <ClCompile Include="NNet\NNet_samples.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Image\Image.h" />
@@ -180,6 +181,7 @@
     <ClInclude Include="Layers\TConv.h" />
     <ClInclude Include="Misc\Misc.h" />
     <ClInclude Include="NNet\NNet.h" />
+    <ClInclude Include="NNet\NNet_samples.h" />
     <ClInclude Include="NNet\Optimizer.h" />
     <ClInclude Include="Layers\Output.h" />
   </ItemGroup>

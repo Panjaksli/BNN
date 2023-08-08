@@ -5,6 +5,8 @@
 #include <memory>
 #include <cmath>
 #include <syncstream>
+//stupid C++ doesnt provide a way for automatic spacing in ostream...
+#define SPC <<' '<<
 namespace BNN {
 	using std::vector;
 	using std::min;

@@ -21,6 +21,8 @@ namespace BNN {
 		virtual void derivative() {}
 		//propagates gradient and accumulates weights/filter
 		virtual void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) {}
+		virtual bool is_input()const { return false; }
+		bool prev_is_input() const { return prev->is_input(); }
 		//output of prev layer -> x and current layer -> y
 		inline Tensor& x() { return prev->a; }
 		inline Tensor& y() { return a; }
@@ -29,27 +31,24 @@ namespace BNN {
 		//get weights and biases if they exist
 		virtual Tensor* get_w() { return nullptr; }
 		virtual Tensor* get_b() { return nullptr; }
-		//dims of prev layer öutput -> x and current layer output -> y
-		idx sz_x() const { return prev->a.size(); }
-		dim1<3> dim_x() const { return prev->a.dimensions(); }
-		idx dim_x(idx i) const { return prev->a.dimension(i); }
-		idx sz_y() const { return a.size(); }
-		dim1<3> dim_y() const { return a.dimensions(); }
-		idx dim_y(idx i) const { return a.dimension(i); }
-		
-		//real dims of layer inputs / outputs
-		virtual dim1<3> dim_in() const { return a.dimensions(); }
-		virtual idx sz_in() const { return a.size(); }
-		dim1<3> dim_out() const { return dim_y(); }
-		idx sz_out() const { return sz_y(); }
+		//dims of prev layer output
+		dim1<3> pdims() const { return prev->odims(); }
+		idx pdim(idx i) const { return pdims()[i]; }
+		idx psize() const { return prev->osize(); }
+		//real dims of layer inputs
+		virtual dim1<3> idims() const { return a.dimensions(); }
+		idx isize() const { return product(idims()); }
+		idx idim(idx i) const { return idims()[i]; }
+		//output dims of the layer
+		dim1<3> odims() const { return a.dimensions(); }
+		idx odim(idx i) const { return odims()[i]; }
+		idx osize()const { return product(odims()); }
 		//dims of w and b if applicable
-		virtual dim1<3> dim_w() const { return { 0,0,0 }; }
-		virtual dim1<3> dim_b() const { return { 0,0,0 }; }
-		virtual idx dim_w(idx i) const { return 0; }
-		virtual idx dim_b(idx i) const { return 0; }
-		virtual float get_cost() const { return next->get_cost(); }
+		virtual dim1<3> wdims() const { return { 0,0,0 }; }
+		virtual dim1<3> bdims() const { return { 0,0,0 }; }
+		idx wdim(idx i) const { return wdims()[i]; }
+		idx bdim(idx i) const { return bdims()[i]; }
 		virtual void save(std::ostream& os) const {}
-		virtual void load(std::istream& is) const {}
 		virtual void print() const {}
 		virtual bool compile(Layer* pnode, Layer* nnode) {
 			set_prev(pnode);
@@ -77,7 +76,7 @@ namespace BNN {
 		void set_next(Layer* node) { next = node; }
 		void set_prev(Layer* node) { prev = node; }
 		bool in_eq_out() const {
-			return sz_x() == sz_in();
+			return psize() == isize();
 		}
 	private:
 		Tensor a;

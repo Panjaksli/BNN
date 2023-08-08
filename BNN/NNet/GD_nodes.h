@@ -5,7 +5,7 @@ namespace BNN {
 		class SGD_node {
 		public:
 			SGD_node() : layer(nullptr), valid(0) {}
-			SGD_node(Layer* layer) : dw(layer->dim_w()), db(layer->dim_b()), layer(layer), valid(dw.size()&&db.size()) { init(); }
+			SGD_node(Layer* layer) : dw(layer->wdims()), db(layer->bdims()), layer(layer), valid(layer->get_w()&&layer->get_b()) { init(); }
 			void get_grad(float inv_n) {
 				if (valid)layer->gradient(dw, db, inv_n);
 				else layer->derivative();
@@ -42,7 +42,7 @@ namespace BNN {
 		class AGD_node : public SGD_node {
 		public:
 			AGD_node() {}
-			AGD_node(Layer* layer) : SGD_node(layer), vw(layer->dim_w()), vb(layer->dim_b()) { init(); }
+			AGD_node(Layer* layer) : SGD_node(layer), vw(layer->wdims()), vb(layer->bdims()) { init(); }
 			void update_grad(float alpha, float mu) {
 				if (valid) {
 					update(*layer->get_w(), vw, dw, alpha, mu);
@@ -71,7 +71,7 @@ namespace BNN {
 		class NAG_node : public SGD_node {
 		public:
 			NAG_node() {}
-			NAG_node(Layer* layer) : SGD_node(layer), vw(layer->dim_w()), vb(layer->dim_b()) { init(); }
+			NAG_node(Layer* layer) : SGD_node(layer), vw(layer->wdims()), vb(layer->bdims()) { init(); }
 
 			void update_grad(float alpha, float mu) {
 				if (valid) {
@@ -102,7 +102,7 @@ namespace BNN {
 		class RMS_node : public SGD_node {
 		public:
 			RMS_node() {}
-			RMS_node(Layer* layer) : SGD_node(layer), vw(layer->dim_w()), vb(layer->dim_b()) { init(); }
+			RMS_node(Layer* layer) : SGD_node(layer), vw(layer->wdims()), vb(layer->bdims()) { init(); }
 			void update_grad(float alpha, float beta, float eps) {
 				if (valid) {
 					update(*layer->get_w(), vw, dw, alpha, beta, eps);
@@ -131,7 +131,7 @@ namespace BNN {
 		class ADAM_node : public SGD_node {
 		public:
 			ADAM_node() {}
-			ADAM_node(Layer* layer) : SGD_node(layer), mw(layer->dim_w()), mb(layer->dim_b()), vw(layer->dim_w()), vb(layer->dim_b()) { init(); }
+			ADAM_node(Layer* layer) : SGD_node(layer), mw(layer->wdims()), mb(layer->bdims()), vw(layer->wdims()), vb(layer->bdims()) { init(); }
 			void update_grad(float alpha, float beta1, float beta2, float eps) {
 				if (valid) {
 					update(*layer->get_w(), mw, vw, dw, alpha, beta1, beta2, eps);

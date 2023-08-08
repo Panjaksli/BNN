@@ -1,17 +1,17 @@
 #pragma once
 #include "../Misc/Eigen_util.h"
-class Tensor;
 namespace BNN {
 	class Image {
 	public:
 		Image() {}
 		Image(const std::string& name, int nch) {
 			std::string rename;
-			bool loaded = load(name, rename, nch) || load(name + ".png", rename, nch) || load(name + ".jpg", rename, nch)
+			if(load(name, rename, nch) || load(name + ".png", rename, nch) || load(name + ".jpg", rename, nch)
 				|| load(name + ".jpeg", rename, nch) || load(name + ".gif", rename, nch) || load(name + ".hdr", rename, nch)
 				|| load(name + ".bmp", rename, nch) || load(name + ".tga", rename, nch) || load(name + ".pic", rename, nch)
-				|| load(name + ".ppm", rename, nch) || load(name + ".pgm", rename, nch) || load(name + ".psd", rename, nch);
-			if(loaded) println("Loaded image:", rename, "D H W:",n,h,w);
+				|| load(name + ".ppm", rename, nch) || load(name + ".pgm", rename, nch) || load(name + ".psd", rename, nch)) {
+				println("Loaded image:", rename, "D H W:", n, h, w); return;
+			}
 			else println("Image was not found:", name);
 		}
 		~Image() { if(data) free(data); }
@@ -36,8 +36,11 @@ namespace BNN {
 		inline ptrdiff_t size()const {
 			return w * h * n;
 		}
-		inline std::array<ptrdiff_t,3> dim()const {
-			return std::array<ptrdiff_t,3>{n,h,w};
+		inline std::array<ptrdiff_t, 3> dim()const {
+			return std::array<ptrdiff_t, 3>{n, h, w};
+		}
+		inline std::array<ptrdiff_t, 3> pdim()const {
+			return std::array<ptrdiff_t, 3>{n, h + h % 2, w + w % 2};
 		}
 		friend void swap(Image& i1, Image& i2) {
 			std::swap(i1.data, i2.data);

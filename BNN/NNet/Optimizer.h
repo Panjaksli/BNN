@@ -43,70 +43,108 @@ void reset_all() override {\
 		Optimizer() {}
 		Optimizer(float alpha) : alpha(alpha) {}
 		virtual ~Optimizer() {}
-		virtual void compile(Layer* last) = 0;
-		virtual void get_grad() = 0;
-		virtual void update_grad() = 0;
-		virtual void reset_grad() = 0;
-		virtual void reset_cache() = 0;
-		virtual void reset_all() = 0;
-		virtual void print() = 0;
-		virtual Optimizer* clone() const = 0;
+		virtual void compile(Layer* last) {}
+		virtual void get_grad() {}
+		virtual void update_grad() {}
+		virtual void reset_grad() {}
+		virtual void reset_cache() {}
+		virtual void reset_all() {}
+		virtual void print() { println("None"); }
+		virtual void save(std::ostream& out) { out << "Optimizer" SPC "None" << "\n"; }
+		virtual Optimizer* clone() const { return new Optimizer(); }
 		float alpha = 0.001f, inv_n = 1.f;
 	};
 	class SGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::SGD_node)
-			SGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			SGD() {}
+		SGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		void update_grad() override {
-			for (auto& n : nodes) {
+			for(auto& n : nodes) {
 				n.update_grad(alpha);
 			}
 		};
 		void print() override {
-			println("SGD", "\tRate:", alpha);
+			println("SGD", "\tRate:", alpha, "\tNodes:", nodes.size());
+		}
+		void save(std::ostream& out) override {
+
+			out << "Optimizer" SPC "SGD" SPC alpha << "\n";
+		}
+		static auto load(std::istream& in) {
+			float a;
+			in >> a;
+			return new SGD(a);
 		}
 		virtual SGD* clone() const override { return new SGD(*this); };
 	};
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
-			AGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			AGD() {}
+		AGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		AGD(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
 		void update_grad() override {
-			for (auto& n : nodes) {
+			for(auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("AGD", "\tRate:", alpha, "\tMu:", mu);
+			println("AGD", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
+		}
+		void save(std::ostream& out) override {
+			out << "Optimizer" SPC"AGD" SPC alpha SPC mu << "\n";
+		}
+		static auto load(std::istream& in) {
+			float a, m;
+			in >> a >> m;
+			return new AGD(a, m);
 		}
 		virtual AGD* clone() const override { return new AGD(*this); };
 		float mu = 0.9f;
 	};
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
-			NAG(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			NAG() {}
+		NAG(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		NAG(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
 		void update_grad() override {
-			for (auto& n : nodes) {
+			for(auto& n : nodes) {
 				n.update_grad(alpha, mu);
 			}
 		};
 		void print() override {
-			println("NAG", "\tRate:", alpha, "\tMu:", mu);
+			println("NAG", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
+		}
+		void save(std::ostream& out) override {
+			out << "Optimizer" SPC"NAG" SPC alpha SPC mu << "\n";
+		}
+		static auto load(std::istream& in) {
+			float a, m;
+			in >> a >> m;
+			return new NAG(a, m);
 		}
 		virtual NAG* clone() const override { return new NAG(*this); };
 		float mu = 0.9f;
 	};
 	class RMSprop : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::RMS_node)
-			RMSprop(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+			RMSprop() {}
+		RMSprop(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		RMSprop(float alpha, float b, float eps, Layer* last = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(last); }
 		void update_grad() override {
-			for (auto& n : nodes) {
+			for(auto& n : nodes) {
 				n.update_grad(alpha, beta, eps);
 			}
 		};
 		void print() override {
-			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tEps", eps);
+			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tEps", eps, "\tNodes:", nodes.size());
+		}
+		void save(std::ostream& out) override {
+			out << "Optimizer" SPC "RMSprop" SPC alpha SPC beta SPC eps << "\n";
+		}
+		static auto load(std::istream& in) {
+			float a, b, e;
+			in >> a >> b >> e;
+			return new RMSprop(a, b, e);
 		}
 		virtual RMSprop* clone() const override { return new RMSprop(*this); };
 		float beta = 0.9f, eps = 1e-6f;
@@ -114,19 +152,38 @@ void reset_all() override {\
 
 	class Adam : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::ADAM_node)
-			Adam(float alpha, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(last); }
+			Adam() {}
+		Adam(float alpha, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(last); }
 		Adam(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
 		void update_grad() override {
-			for (auto& n : nodes) {
+			for(auto& n : nodes) {
 				n.update_grad(alpha, beta1, beta2, eps);
 			}
 		};
+		void save(std::ostream& out) override {
+			out << "Optimizer" SPC "Adam" SPC alpha SPC beta1 SPC beta2 SPC eps << "\n";
+		}
+		static auto load(std::istream& in) {
+			float a, b1,b2, e;
+			in >> a >> b1 >> b2 >> e;
+			return new Adam(a, b1,b2, e);
+		}
 		void print() override {
-			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps);
+			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps, "\tNodes:", nodes.size());
 		}
 		virtual Adam* clone() const override { return new Adam(*this); };
 		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-6f;
 	};
+	inline Optimizer* Optimizer_load(std::istream& in) {
+		std::string token;
+		in >> token;
+		if(token == "SGD") return SGD::load(in);
+		else if(token == "AGD") return AGD::load(in);
+		else if(token == "NAG") return NAG::load(in);
+		else if(token == "Rmsprop") return RMSprop::load(in);
+		else if(token == "Adam") return Adam::load(in);
+		else return new Optimizer();
+	}
 }
 
 #undef COMMON_OPTIM_FUNCS
