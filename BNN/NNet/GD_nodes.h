@@ -5,7 +5,8 @@ namespace BNN {
 		class SGD_node {
 		public:
 			SGD_node() : layer(nullptr), valid(0) {}
-			SGD_node(Layer* layer) : dw(layer->wdims()), db(layer->bdims()), layer(layer), valid(layer->get_w()&&layer->get_b()) { init(); }
+			SGD_node(Layer* layer) : dw(layer->wdims()), db(layer->bdims()), layer(layer),
+				valid(layer->type() == t_Conv|| layer->type() == t_TConv||layer->type() == t_Dense) { init(); }
 			void get_grad(float inv_n) {
 				if (valid)layer->gradient(dw, db, inv_n);
 				else layer->derivative();

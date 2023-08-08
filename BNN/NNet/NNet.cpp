@@ -10,22 +10,18 @@ namespace BNN {
 	NNet::NNet(const NNet& cpy) {
 		name = cpy.name;
 		compiled = false;
-		input = cpy.input->clone();
-		for(const auto& h : cpy.hidden) {
-			hidden.push_back(h->clone());
+		for(const auto& g : cpy.graph) {
+			graph.push_back(g->clone());
 		}
-		output = cpy.output->clone();
 		optimizer = cpy.optimizer->clone();
 		Compile(0);
 	}
 	NNet& NNet::operator=(NNet cpy) {
 		Clear();
 		name = cpy.name;
-		input = cpy.input->clone();
-		for(const auto& h : cpy.hidden) {
-			hidden.push_back(h->clone());
+		for(const auto& g : cpy.graph) {
+			graph.push_back(g->clone());
 		}
-		output = cpy.output->clone();
 		optimizer = cpy.optimizer->clone();
 		Compile(0);
 		return *this;
@@ -34,11 +30,10 @@ namespace BNN {
 		if(Out_size() == other.In_size()) {
 			compiled = false;
 			name = name + "_" + other.name;
-			for(const auto& h : other.hidden) {
-				hidden.push_back(h->clone());
+			Rem_node();
+			for(idx i = 1; i < other.graph.size(); i++) {
+				graph.push_back(other.graph[i]->clone());
 			}
-			if(output) delete output;
-			output = other.output->clone();
 			println("Message:  Joined network", name);
 			Compile(1);
 		}
@@ -53,11 +48,11 @@ namespace BNN {
 			println("Error:  Invalid network graph !");
 			return false;
 		}
-		else if(dim_x[1] * dim_x[2] * dim_x[3] != input->isize()) {
+		else if(dim_x[1] * dim_x[2] * dim_x[3] != In_size()) {
 			println("Error:  Input data mismatch !");
 			return false;
 		}
-		else if(dim_y[1] * dim_y[2] * dim_y[3] != output->osize()) {
+		else if(dim_y[1] * dim_y[2] * dim_y[3] != Out_size()) {
 			println("Error:  Output data mismatch !");
 			return false;
 		}
@@ -74,19 +69,16 @@ namespace BNN {
 			return compiled = false;
 		}
 		else {
-			input->compile(nullptr, hidden[0]);
-			for(idx i = 0; i < hidden.size(); i++) {
-				if(!hidden[i]->compile(i == 0 ? input : hidden[i - 1], i < hidden.size() - 1 ? hidden[i + 1] : output)) {
-					if(log)println("Error:  Dimension mismatch in node: ", i, "!", "Prev node:", hidden[i]->psize(), "This node:", hidden[i]->isize());
+			for(idx i = 0; i < graph.size(); i++) {
+				Layer* prev = i ? graph[i - 1] : nullptr;
+				Layer* next = graph.size() - i - 1 ? graph[i + 1] : nullptr;
+				if(!graph[i]->compile(prev, next)) {
+					if(log)println("Error:  Dimension mismatch in node: ", i, "!", "Prev node:", graph[i]->psize(), "This node:", graph[i]->isize());
 					return compiled = false;
 				}
 			}
 		}
-		if(!output->compile(hidden.back(), nullptr)) {
-			if(log)println("Error:  Dimension mismatch in output node !", "Prev node:", output->psize(), "This node:", output->isize());
-			return compiled = false;
-		}
-		optimizer->compile(output);
+		optimizer->compile(graph.back());
 		if(log)println("Message:  Network compiled succesfully:");
 		if(log)Print();
 		return compiled = true;
@@ -101,10 +93,11 @@ namespace BNN {
 		vector<NNet> nets(nthr, *this);
 		dim1<4> dx{step, x0.dimension(1), x0.dimension(2), x0.dimension(3)};
 		dim1<4> dy{step, y0.dimension(1), y0.dimension(2), y0.dimension(3)};
+		int logid = raint(0, nthr);
 #pragma omp parallel for
 		for(int i = 0; i < nthr; i++) {
 			dim1<4> o{i* step, 0, 0, 0};
-			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == 0);
+			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == logid);
 #pragma omp atomic
 			result &= res;
 		}
@@ -113,9 +106,9 @@ namespace BNN {
 		NNet net(*this);
 		net.zero();
 		for(const auto& n : nets) {
-			for(int i = 0; i < net.hidden.size(); i++) {
-				if(net.hidden[i]->get_b()) *net.hidden[i]->get_b() += mult * *n.hidden[i]->get_b();
-				if(net.hidden[i]->get_w()) *net.hidden[i]->get_w() += mult * *n.hidden[i]->get_w();
+			for(int i = 0; i < net.graph.size(); i++) {
+				if(net.graph[i]->get_b()) *net.graph[i]->get_b() += mult * *n.graph[i]->get_b();
+				if(net.graph[i]->get_w()) *net.graph[i]->get_w() += mult * *n.graph[i]->get_w();
 			}
 		}
 		*this = net;
@@ -138,8 +131,8 @@ namespace BNN {
 		for(int i = 1; i <= epochs; i++) {
 			float cost = 0;
 			for(int j = 0; j < x0.dimension(0); j++) {
-				input->predict(x0.chip(j, 0));
-				cost += output->error(y0.chip(j, 0)) * inv_ep;
+				graph.front()->predict(x0.chip(j, 0));
+				cost += graph.back()->error(y0.chip(j, 0)) * inv_ep;
 				optimizer->get_grad();
 			}
 			if(cost > 1e3f) { println("Error:  Failed training !!!"); return false; }
@@ -156,7 +149,7 @@ namespace BNN {
 	void NNet::Save(const std::string& folder) const {
 		create_directories(folder);
 		std::ofstream out(name + "/data.bin",std::ios::binary | std::ios::out);
-		input->save(out);
+		graph.front()->save(out);
 		optimizer->save(out);
 	}
 	void NNet::Save() const { Save(name); }
@@ -170,12 +163,8 @@ namespace BNN {
 		while(in) {
 			std::string token;
 			in >> token;
-			if(token == "Input")
-				input = Input::load(in);
-			else if(token == "Output")
-				output = Output::load(in);
-			else if(token == "Hidden")
-				hidden.push_back(Hidden_load(in));
+			if(token == "Hidden")
+				graph.push_back(Layer_load(in));
 			else if(token == "Optimizer")
 				optimizer = Optimizer_load(in);
 			else break;
@@ -189,9 +178,7 @@ namespace BNN {
 	void NNet::Print() const {
 		println("------------------------------------------------------------------------------------------------");
 		std::cout << "Network\t|\t"; println(name);
-		if(input)input->print();
-		for(const auto& h : hidden) h->print();
-		if(output)output->print();
+		for(const auto& g : graph) g->print();
 		std::cout << ("Optimiz\t|\t"); if(optimizer) { optimizer->print(); }
 		println("------------------------------------------------------------------------------------------------");
 	}
@@ -207,11 +194,9 @@ namespace BNN {
 			Image(y.chip(i, 0)).save(name + "/" + std::to_string(i + 1) + ".png");
 	}
 	void NNet::Clear() {
-		compiled = 0;
-		if(input)delete input;
-		if(output)delete output;
+		compiled = false;
 		if(optimizer)delete optimizer;
-		for(auto& h : hidden) delete h;
-		hidden.clear();
+		for(auto& h : graph) delete h;
+		graph.clear();
 	}
 }

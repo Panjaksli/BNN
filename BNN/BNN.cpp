@@ -19,17 +19,16 @@ int main() {
 	NNet scl(Downscaler(out[0].pdim(), 2));
 	Tenarr x(out.size(), scl.Out_dim(0), scl.Out_dim(1), scl.Out_dim(2));
 	for(int i = 0; i < out.size(); i++) x.chip(i, 0) = scl.Compute(out[i].tensor());
-#if 0
-	Input* inp = new Input(scl.Out_dims());
-	vector<Layer*> hid;
+#if 1
+	vector<Layer*> top;
 	//hidden layers
-	hid.push_back(new TConv(9, 2, 2, 0, inp, false, Afun::t_relu));
-	//hid.push_back(new Dropout(0.2f, hid.back()));
-	hid.push_back(new Conv(3, 3, 1, 1, hid.back(), false, Afun::t_relu));
-	//hid.push_back(new Conv(3, 3, 1, 1, hid.back(), true, Afun::t_relu));
-	auto outp = new Output(hid.back(), Afun::t_sat, Efun::t_mse);
+	top.push_back(new Input(scl.Out_dims()));
+	top.push_back(new TConv(9, 2, 2, 0, top.back(), false, Afun::t_relu));
+	//top.push_back(new Dropout(0.2f, top.back()));
+	top.push_back(new Conv(3, 3, 1, 1, top.back(), false, Afun::t_relu));
+	top.push_back(new Output(top.back(), Afun::t_sat, Efun::t_mse));;
 	auto opt = new Adam(0.003f);
-	NNet net(inp, hid, outp, opt, "tup9x2_3");
+	NNet net(top, opt, "tup9x2_3");
 #else
 	NNet net("tup9x2_3");
 	net.Add_hidden(new Dropout(0.1f, net.Dim_of(0)), 1);

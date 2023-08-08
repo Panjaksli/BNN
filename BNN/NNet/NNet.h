@@ -9,33 +9,38 @@ namespace BNN {
 		NNet(const NNet& cpy);
 		NNet& operator=(NNet cpy);
 		NNet(const std::string& name) : name(name) { Load(); }
-		NNet(Input* in, Output* out, Optimizer* opt, const std::string& name = "Net") : input(in), output(out), optimizer(opt) {}
 		NNet(NNet first, const NNet& second) : NNet(first.Append(second)) {}
-		NNet(Input* in, const vector<Layer*>& hid, Output* out, Optimizer* opt, const std::string& name = "Net") : input(in), output(out), hidden(hid), optimizer(opt), name(name) { Compile(); }
+		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
+		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
 		bool Train_single(const Tenarr& x0, const Tenarr& y0, int epochs = 1000, int nlog = 100);
 		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr = 16, int epochs = 1000, int nlog = 100);
 		void Clear();
 		void Print() const;
-		dim1<3> In_dims()const { return input ? input->odims() : dim1<3>{ 0,0,0 }; }
-		dim1<3> Out_dims()const { return output ? output->odims() : dim1<3>{ 0,0,0 }; }
+		dim1<3> In_dims()const { return graph.front()->idims(); }
+		dim1<3> Out_dims()const { return graph.back()->odims(); }
 		idx In_dim(idx i)const { return In_dims()[i]; }
 		idx Out_dim(idx i)const { return Out_dims()[i]; }
-		idx In_size()const { return input ? input->osize() : 0; };
-		idx Out_size()const { return output ? output->osize() : 0; }
-		void Set_input(Input* in) { if(in) { input = in; compiled = false; } }
-		void Set_output(Output* out) { if(out) { output = out; compiled = false; } }
-		void Add_hidden(Layer* hidl) { if(hidl) { hidden.push_back(hidl); compiled = false; } }
-		void Add_hidden(Layer* hidl, idx id) { if(hidl && id < hidden.size()) { hidden.insert(hidden.begin() + id, hidl); compiled = false; } }
-		dim1<3> Dim_of(idx id)const { return hidden[id]->odims(); }
-		idx Size_of(idx id)const { return hidden[id]->osize(); }
-		void Rem_hidden() { hidden.pop_back(); compiled = false; }
-		void Rem_hidden(idx id) { if(id < hidden.size()) { hidden.erase(hidden.begin() + id); compiled = false; } }
+		idx In_size()const { return product(In_dims()); }
+		idx Out_size()const { return product(Out_dims()); }
+
+		void Add_node(Layer* hidl) { if(hidl) { graph.push_back(hidl); compiled = false; } }
+		void Add_node(Layer* hidl, idx id) { if(hidl && id < graph.size()) { graph.insert(graph.begin() + id, hidl); compiled = false; } }
+		void Rem_node() { graph.pop_back(); compiled = false; }
+		void Rem_node(idx id) { if(id < graph.size()) { graph.erase(graph.begin() + id); compiled = false; } }
+
+		dim1<3> Dim_of(idx id)const { return graph[id]->odims(); }
+		idx Size_of(idx id)const { return graph[id]->osize(); }
+		
 		Tensor Compute(const Tensor& x) const {
-			return input->compute(x);
+			return graph.front()->compute(x);
 		}
 		Tenarr Compute_batch(const Tenarr& x) const {
-			return input->compute_batch(x);
+			Tenarr y(x.dimension(0), Out_dim(0), Out_dim(1), Out_dim(2));
+			for(idx i = 0; i < x.dimension(0); i++) {
+				y.chip(i, 0) = Compute(x.chip(i, 0));
+			}
+			return y;
 		}
 		NNet& Append(const NNet& other);
 		void Save(const std::string &name) const;
@@ -46,23 +51,24 @@ namespace BNN {
 		void Save_images(const Tenarr& x) const;
 	private:
 		void init() {
-			for(auto& h : hidden) {
-				h->init();
+			for(auto& g : graph) {
+				g->init();
 			}
 			optimizer->reset_all();
 		}
 		void zero() {
-			for(auto& h : hidden) {
-				h->zero();
+			for(auto& g : graph) {
+				g->zero();
 			}
 			optimizer->reset_all();
 		}
-		bool valid() const { return input && output && optimizer && hidden.size() > 0; }
+		static bool valid_graph(const vector<Layer*> graph) {
+			return graph.size() >= 2 && graph.front()->type() == t_Input && graph.back()->type() == t_Output;
+		}
+		bool valid() const { return optimizer && valid_graph(graph); }
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
 		bool train_job(const Tenarr& x0, const Tenarr& y0, int epochs = 1000, int nlog = 100, bool log = 1);
-		Input* input = nullptr;
-		Output* output = nullptr;
-		vector<Layer*> hidden;
+		vector<Layer*> graph;
 		Optimizer* optimizer = nullptr;
 		std::string name = "Net";
 		bool compiled = false;

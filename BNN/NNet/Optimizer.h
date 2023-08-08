@@ -6,6 +6,7 @@ private:\
 vector<TYPE> nodes;\
 	void build(Layer* node) {\
 		if (!node||!node->prev) return; \
+        nodes.clear();\
 		Layer* curr = node->prev;\
 		while (curr->prev) {\
 			nodes.push_back(curr); \
@@ -14,7 +15,6 @@ vector<TYPE> nodes;\
 	};\
 public:\
 void compile(Layer* last) override {\
-	nodes.clear();\
 	build(last);\
 };\
 void get_grad() override { \
@@ -164,9 +164,9 @@ void reset_all() override {\
 			out << "Optimizer" SPC "Adam" SPC alpha SPC beta1 SPC beta2 SPC eps << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, b1,b2, e;
+			float a, b1, b2, e;
 			in >> a >> b1 >> b2 >> e;
-			return new Adam(a, b1,b2, e);
+			return new Adam(a, b1, b2, e);
 		}
 		void print() override {
 			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps, "\tNodes:", nodes.size());
