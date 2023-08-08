@@ -13,13 +13,13 @@ namespace BNN {
 		void init() override { _init(); }
 		void derivative() override {
 			dz = y() * dz;
-			if(!prev_is_input())mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, {0,0});
+			if(ptype() != t_Input) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, {0,0});
 		}
 		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
 			dz = y() * dz;
 			db += dz * inv_n;
 			dw += mul(dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), { 1,0 })* inv_n;
-			if(!prev_is_input())mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
+			if(ptype() != t_Input) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
 		}
 		void print()const override {
 			println("Dense\t|", "\tIn:", 1, wdim(2), 1, "\tOut:", odim(0), odim(1), odim(2));
@@ -45,6 +45,7 @@ namespace BNN {
 		dim1<3> wdims() const override { return w.dimensions(); }
 		dim1<3> bdims() const override { return b.dimensions(); }
 		dim1<3> idims() const override { return dim1<3>{1, wdim(2), 1}; }
+		LType type() const override { return t_Dense; }
 	private:
 		void _init() {
 			b = b.random() * 0.5f - 0.25f;
@@ -52,6 +53,9 @@ namespace BNN {
 		}
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(fma(w, x.reshape(dim1<3>{ 1, wdim(2), 1 }), b).unaryExpr(af.fx()));
+		}
+		Tensor comp_dyn(const Tensor& x) const override {
+			return next->comp_dyn(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x, b).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
 			fma_r(y(), w, x().reshape(dim1<3>{ 1, wdim(2), 1 }), b);

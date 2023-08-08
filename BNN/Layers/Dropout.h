@@ -8,7 +8,7 @@ namespace BNN {
 		Dropout(float rate, shp3 din, Layer* prev = nullptr) : Layer(din, prev), dz(din), rate(rate) { _init(); }
 		void init() override { _init(); }
 		void derivative() override {
-			if(!prev_is_input())x() = (y() * dz).reshape(pdims());
+			if(ptype() != t_Input) x() = (y() * dz).reshape(pdims());
 		}
 		dim1<3> idims() const override { return dz.dimensions(); }
 		void print()const override {
@@ -25,9 +25,13 @@ namespace BNN {
 			return new Dropout(rate, d);
 		}
 		Dropout* clone() const override { return new Dropout(*this); }
+		LType type() const override { return t_Dropout; }
 	private:
 		Tensor compute(const Tensor& x) const override {
 			//We should skip the dropout during normal computation !
+			return next->compute(x);
+		}
+		Tensor comp_dyn(const Tensor& x) const override {
 			return next->compute(x);
 		}
 		const Tensor& predict() override {
