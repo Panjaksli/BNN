@@ -1,5 +1,5 @@
 #pragma once
-#include <unsupported/Eigen/CXX11/Tensor>
+#include "../eigen/unsupported/Eigen/CXX11/Tensor"
 #include "Misc.h"
 
 namespace BNN {
