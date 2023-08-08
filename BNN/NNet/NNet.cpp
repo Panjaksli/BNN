@@ -78,7 +78,7 @@ namespace BNN {
 				}
 			}
 		}
-		optimizer->compile(graph.back());
+		optimizer->compile(graph.front());
 		if(log)println("Message:  Network compiled succesfully:");
 		if(log)Print();
 		return compiled = true;

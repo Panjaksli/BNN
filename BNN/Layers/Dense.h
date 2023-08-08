@@ -11,15 +11,15 @@ namespace BNN {
 			_init();
 		}
 		void init() override { _init(); }
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			dz = y() * dz;
-			if(ptype() != t_Input) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, {0,0});
+			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, {0,0});
 		}
-		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz;
 			db += dz * inv_n;
 			dw += mul(dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), { 1,0 })* inv_n;
-			if(ptype() != t_Input) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
+			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
 		}
 		void print()const override {
 			println("Dense\t|", "\tIn:", 1, wdim(2), 1, "\tOut:", odim(0), odim(1), odim(2));

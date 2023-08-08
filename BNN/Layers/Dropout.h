@@ -7,8 +7,8 @@ namespace BNN {
 		Dropout(float rate, Layer* prev) : Layer(prev->odims(), prev), dz(pdims()), rate(rate) { _init(); }
 		Dropout(float rate, shp3 din, Layer* prev = nullptr) : Layer(din, prev), dz(din), rate(rate) { _init(); }
 		void init() override { _init(); }
-		void derivative() override {
-			if(ptype() != t_Input) x() = (y() * dz).reshape(pdims());
+		void derivative(bool ptrain) override {
+			if(ptrain) x() = (y() * dz).reshape(pdims());
 		}
 		dim1<3> idims() const override { return dz.dimensions(); }
 		void print()const override {

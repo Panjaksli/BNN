@@ -24,11 +24,11 @@ int main() {
 	//hidden layers
 	top.push_back(new Input(scl.Out_dims()));
 	top.push_back(new TConv(9, 2, 2, 0, top.back(), false, Afun::t_relu));
-	//top.push_back(new Dropout(0.2f, top.back()));
+	top.push_back(new Dropout(0.1f, top.back()));
 	top.push_back(new Conv(3, 3, 1, 1, top.back(), false, Afun::t_relu));
 	top.push_back(new Output(top.back(), Afun::t_sat, Efun::t_mse));;
 	auto opt = new Adam(0.003f);
-	NNet net(top, opt, "tup9x2_3");
+	NNet net(top, opt, "tupd9x2_3");
 #else
 	NNet net("tup9x2_3");
 	net.Add_hidden(new Dropout(0.1f, net.Dim_of(0)), 1);

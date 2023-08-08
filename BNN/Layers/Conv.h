@@ -17,19 +17,19 @@ namespace BNN {
 			_init();
 		}
 		void init() override { _init(); }
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			dz = y() * dz;
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(ptype() != t_Input) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
 		}
-		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz;
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions()) * inv_n;
 			dw += iconv(x().reshape(din), dy, 1, pa) * inv_n;
-			if(ptype() != t_Input) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
 		}
 
 		void print()const override {

@@ -15,11 +15,11 @@ namespace BNN {
 			w(1, ks[0], ks[1]), din(pdims()), ks(ks), st(st), pa(pa) {
 			_init();
 		}
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
 			auto dy = y().inflate(dim1<3>{ 1, st[0], st[1] });
 			//much faster than pooling...
-			if(ptype() != t_Input) aconv_r(x().reshape(din), dy, w, 1, ks - pa - 1);
+			if(ptrain) aconv_r(x().reshape(din), dy, w, 1, ks - pa - 1);
 		}
 		void print()const override {
 			println("AvgPl\t|", "\tIn:", din[0], din[1], din[2],
