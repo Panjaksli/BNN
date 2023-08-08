@@ -17,19 +17,19 @@ namespace BNN {
 			_init();
 		}
 		void init() override { _init(); }
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			dz = y() * dz;
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(!prev_is_input())conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
 		}
-		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz;
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions()) * inv_n;
 			dw += iconv(x().reshape(din), dy, 1, pa) * inv_n;
-			if(!prev_is_input())conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
 		}
 
 		void print()const override {
@@ -60,6 +60,7 @@ namespace BNN {
 		dim1<3> wdims() const override { return w.dimensions(); }
 		dim1<3> bdims() const override { return b.dimensions(); }
 		dim1<3> idims() const override { return din; }
+		LType type() const override { return t_Conv; }
 	private:
 		void _init() {
 			if(bias)b = b.random() * 0.5f - 0.25f;
@@ -67,7 +68,13 @@ namespace BNN {
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{odim(0), 1, 1})).unaryExpr(af.fx()));
-			else return next->compute((conv(x.reshape(din), w, st, pa)).unaryExpr(af.fx()));
+			else return next->compute(conv(x.reshape(din), w, st, pa).unaryExpr(af.fx()));
+		}
+		Tensor comp_dyn(const Tensor& x) const override {
+			if(bias) return next->comp_dyn((conv(x, w, st, pa)
+				+ b.broadcast(dim1<3>{odim(0), c_dim(x.dimension(1), ks[0], st[0], pa[0]) / y().dimension(1),
+					c_dim(x.dimension(2), ks[1], st[1], pa[1]) / y().dimension(2)})).unaryExpr(af.fx()));
+			else return next->comp_dyn(conv(x, w, st, pa).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
 			conv_r(y(), x().reshape(din), w, st, pa);

@@ -15,9 +15,9 @@ namespace BNN {
 			w(1, ks[0], ks[1]), din(pdims()), ks(ks), st(st), pa(pa) {
 			_init();
 		}
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			w.setConstant(1.f / w.size());
-			if(!prev_is_input())aconv_r(x().reshape(din), y(), w, st, pa);
+			if(ptrain) aconv_r(x().reshape(din), y(), w, st, pa);
 		}
 		void print()const override {
 			println("AvgUpl\t|", "\tIn:", din[0], din[1], din[2],
@@ -36,6 +36,7 @@ namespace BNN {
 		}
 		AvgUpool* clone() const override { return new AvgUpool(*this); }
 		dim1<3> idims() const override { return din; }
+		LType type() const override { return t_AvgUpool; }
 	private:
 		void init()override { _init(); }
 		void _init() {
@@ -44,6 +45,10 @@ namespace BNN {
 		Tensor compute(const Tensor& x) const override {
 			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
 			return next->compute(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
+		}
+		Tensor comp_dyn(const Tensor& x) const override {
+			auto ix = x.inflate(dim1<3>{ 1, st[0], st[1] });
+			return next->comp_dyn(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
 		}
 		const Tensor& predict() override {
 			w.setConstant(float(st[0] * st[1]) / w.size());

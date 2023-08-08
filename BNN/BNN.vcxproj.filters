@@ -89,5 +89,8 @@
     <ClInclude Include="NNet\NNet_samples.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BNN.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

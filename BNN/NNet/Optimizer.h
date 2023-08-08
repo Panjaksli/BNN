@@ -4,22 +4,23 @@ namespace BNN {
 #define COMMON_OPTIM_FUNCS(TYPE) \
 private:\
 vector<TYPE> nodes;\
-	void build(Layer* node) {\
-		if (!node||!node->prev) return; \
-		Layer* curr = node->prev;\
-		while (curr->prev) {\
-			nodes.push_back(curr); \
-			curr = curr->prev;\
-		}\
-	};\
-public:\
-void compile(Layer* last) override {\
+void build(Layer* node) {\
+	if(!node) return;\
 	nodes.clear();\
-	build(last);\
+	while(!node->trainable() && node->next) node = node->next;\
+	while(node->next) {\
+		nodes.push_back(node);\
+		node = node->next;\
+	}\
+	std::reverse(nodes.begin(), nodes.end());\
+}\
+public:\
+void compile(Layer* first) override {\
+	build(first);\
 };\
 void get_grad() override { \
-	for (auto& n : nodes) {\
-		n.get_grad(inv_n);\
+	for (int i = 0 ; i < nodes.size(); i++) {\
+		nodes[i].get_grad(i < nodes.size() - 1, inv_n);\
 	}\
 };\
 void reset_grad() override {\
@@ -43,7 +44,7 @@ void reset_all() override {\
 		Optimizer() {}
 		Optimizer(float alpha) : alpha(alpha) {}
 		virtual ~Optimizer() {}
-		virtual void compile(Layer* last) {}
+		virtual void compile(Layer* first) {}
 		virtual void get_grad() {}
 		virtual void update_grad() {}
 		virtual void reset_grad() {}
@@ -57,7 +58,7 @@ void reset_all() override {\
 	class SGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::SGD_node)
 			SGD() {}
-		SGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+		SGD(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
 				n.update_grad(alpha);
@@ -80,8 +81,8 @@ void reset_all() override {\
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
 			AGD() {}
-		AGD(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
-		AGD(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
+		AGD(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
+		AGD(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
 				n.update_grad(alpha, mu);
@@ -104,8 +105,8 @@ void reset_all() override {\
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
 			NAG() {}
-		NAG(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
-		NAG(float alpha, float mu, Layer* last = nullptr) : Optimizer(alpha), mu(mu) { build(last); }
+		NAG(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
+		NAG(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
 				n.update_grad(alpha, mu);
@@ -128,8 +129,8 @@ void reset_all() override {\
 	class RMSprop : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::RMS_node)
 			RMSprop() {}
-		RMSprop(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
-		RMSprop(float alpha, float b, float eps, Layer* last = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(last); }
+		RMSprop(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
+		RMSprop(float alpha, float b, float eps, Layer* first = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
 				n.update_grad(alpha, beta, eps);
@@ -153,8 +154,8 @@ void reset_all() override {\
 	class Adam : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::ADAM_node)
 			Adam() {}
-		Adam(float alpha, float b1, float b2, float eps, Layer* last = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(last); }
-		Adam(float alpha, Layer* last = nullptr) : Optimizer(alpha) { build(last); }
+		Adam(float alpha, float b1, float b2, float eps, Layer* first = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(first); }
+		Adam(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
 				n.update_grad(alpha, beta1, beta2, eps);
@@ -164,9 +165,9 @@ void reset_all() override {\
 			out << "Optimizer" SPC "Adam" SPC alpha SPC beta1 SPC beta2 SPC eps << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, b1,b2, e;
+			float a, b1, b2, e;
 			in >> a >> b1 >> b2 >> e;
-			return new Adam(a, b1,b2, e);
+			return new Adam(a, b1, b2, e);
 		}
 		void print() override {
 			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps, "\tNodes:", nodes.size());

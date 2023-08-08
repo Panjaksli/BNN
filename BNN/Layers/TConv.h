@@ -15,18 +15,18 @@ namespace BNN {
 			_init();
 		}
 		void init() override { _init(); }
-		void derivative() override {
+		void derivative(bool ptrain) override {
 			dz = y() * dz;
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(!prev_is_input())conv_r(x().reshape(din), dz, wr, st, pa);
+			if(ptrain) conv_r(x().reshape(din), dz, wr, st, pa);
 		}
-		void gradient(Tensor& dw, Tensor& db, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz;
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			auto dx = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
-			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions()) * inv_n;
+			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions())* inv_n;
 			dw += iconv(dx, dz, 1, ks - pa - 1) * inv_n;
-			if(!prev_is_input())conv_r(x().reshape(din), dz, wr, st, pa);
+			if(ptrain) conv_r(x().reshape(din), dz, wr, st, pa);
 		}
 		void print()const override {
 			println("TConv\t|", "\tIn:", din[0], din[1], din[2],
@@ -34,6 +34,7 @@ namespace BNN {
 				"\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1], "\tBias", bias);
 		}
 		TConv* clone() const override { return new TConv(*this); }
+		LType type() const override { return t_TConv; }
 		void save(std::ostream& out)const override {
 			out << "Hidden TConv" SPC din[0] SPC din[1] SPC din[2] SPC odim(0) SPC ks[0]
 				SPC ks[1] SPC st[0] SPC st[1] SPC pa[0] SPC pa[1] SPC bias SPC af.type << "\n";
@@ -45,7 +46,7 @@ namespace BNN {
 		static auto load(std::istream& in) {
 			shp3 d; shp2 k, s, p; idx n; int af; bool b;
 			in >> d[0] >> d[1] >> d[2] >> n >> k[0]
-				>> k[1] >> s[0] >> s[1] >> p[0] >> p[1] >> b >> af; in.ignore(1,'\n');
+				>> k[1] >> s[0] >> s[1] >> p[0] >> p[1] >> b >> af; in.ignore(1, '\n');
 			auto tmp = new TConv(d, n, k, s, p, nullptr, b, Afun::Type(af));
 			in.read((char*)tmp->get_w()->data(), tmp->w.size() * 4);
 			if(b)in.read((char*)tmp->get_b()->data(), tmp->b.size() * 4);
@@ -64,6 +65,16 @@ namespace BNN {
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1) + b.broadcast(dim1<3>{odim(0), 1, 1})).unaryExpr(af.fx()));
 			else return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1)).unaryExpr(af.fx()));
+		}
+		Tensor comp_dyn(const Tensor& x) const override {
+			if(bias) return next->comp_dyn(
+				(
+					conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1)
+					+ b.broadcast(dim1<3>{odim(0), t_dim(x.dimension(1), ks[0], st[0], pa[0]) / y().dimension(1),
+						t_dim(x.dimension(2), ks[1], st[1], pa[1]) / y().dimension(2)})
+					).unaryExpr(af.fx())
+			);
+			else return next->comp_dyn(conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
 			auto ix = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });

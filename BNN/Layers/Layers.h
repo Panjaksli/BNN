@@ -9,10 +9,14 @@
 #include "TConv.h"
 #include "Dropout.h"
 namespace BNN {
-	inline Layer* Hidden_load(std::istream &in) {
+	inline Layer* Layer_load(std::istream &in) {
 		std::string token;
 		in >> token;
-		if(token == "AvgPool")
+		if(token == "Input")
+			return Input::load(in);
+		else if(token == "Output")
+			return Output::load(in);
+		else if(token == "AvgPool")
 			return AvgPool::load(in);
 		else if(token == "AvgUpool")
 			return AvgUpool::load(in);
