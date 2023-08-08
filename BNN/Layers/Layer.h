@@ -23,7 +23,7 @@ namespace BNN {
 		virtual float error(const Tensor& y0) { return 1e6f; }
 		//not thread safe but faster
 		virtual const Tensor& predict() = 0;
-		virtual const Tensor& predict(const Tensor& x) { return next->predict(x); };
+		virtual const Tensor& predict(const Tensor& x) = 0;
 		//propagates gradient backwards
 		virtual void derivative(bool ptrain) {}
 		//propagates gradient and accumulates weights/filter

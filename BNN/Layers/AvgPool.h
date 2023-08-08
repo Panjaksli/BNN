@@ -55,6 +55,11 @@ namespace BNN {
 			aconv_r(y(), x().reshape(din), w, st, pa);
 			return next->predict();
 		}
+		const Tensor& predict(const Tensor &x) override {
+			w.setConstant(1.f / w.size());
+			aconv_r(y(), x.reshape(din), w, st, pa);
+			return next->predict(y());
+		}
 		Tensor w;
 		dim1<3> din;
 		shp2 ks, st, pa;

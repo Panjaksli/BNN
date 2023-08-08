@@ -93,15 +93,13 @@ namespace BNN {
 		vector<NNet> nets(nthr, *this);
 		dim1<4> dx{step, x0.dimension(1), x0.dimension(2), x0.dimension(3)};
 		dim1<4> dy{step, y0.dimension(1), y0.dimension(2), y0.dimension(3)};
-		int logid = raint(0, nthr);
 #pragma omp parallel for
 		for(int i = 0; i < nthr; i++) {
 			dim1<4> o{i* step, 0, 0, 0};
-			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == logid);
+			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == 0);
 #pragma omp atomic
 			result &= res;
 		}
-
 		if(!result) return false;
 		NNet net(*this);
 		net.zero();

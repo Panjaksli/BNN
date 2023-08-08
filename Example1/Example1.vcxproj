@@ -183,6 +183,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Data\1.png" />
+    <Image Include="Data\10.png" />
     <Image Include="Data\2.png" />
     <Image Include="Data\3.png" />
     <Image Include="Data\4.png" />
@@ -190,6 +191,7 @@
     <Image Include="Data\6.png" />
     <Image Include="Data\7.png" />
     <Image Include="Data\8.png" />
+    <Image Include="Data\9.png" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -56,6 +56,12 @@ namespace BNN {
 			aconv_r(y(), ix, w, 1, ks - pa - 1);
 			return next->predict();
 		}
+		const Tensor& predict(const Tensor& x) override {
+			w.setConstant(float(st[0] * st[1]) / w.size());
+			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
+			aconv_r(y(), ix, w, 1, ks - pa - 1);
+			return next->predict(y());
+		}
 		Tensor w;
 		dim1<3> din;
 		shp2 ks, st, pa;

@@ -19,6 +19,9 @@ namespace BNN {
 			input(x);
 			return next->predict();
 		}
+		const Tensor& predict() override {
+			return next->predict();
+		}
 		void print()const override {
 			println("Input\t|", "\tIn:", odim(0), odim(1), odim(2), "\tOut:", odim(0), odim(1), odim(2));
 		}
@@ -34,6 +37,6 @@ namespace BNN {
 		Input* clone() const override { return new Input(*this); }
 		LType type() const override { return t_Input; }
 	private:
-		const Tensor& predict() override { return next->predict(); }
+		//const Tensor& predict() override { return next->predict(); }
 	};
 }

@@ -38,6 +38,9 @@ namespace BNN {
 			y() = x().reshape(idims()) * dz;
 			return next->predict();
 		}
+		const Tensor& predict(const Tensor& x) override {
+			return next->predict(y() = x.reshape(idims()) * dz);
+		}
 		void update() override { _init(); }
 		void _init() {
 			float weight = (1.f / (1.f - rate));

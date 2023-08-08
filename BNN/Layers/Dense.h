@@ -12,11 +12,11 @@ namespace BNN {
 		}
 		void init() override { _init(); }
 		void derivative(bool ptrain) override {
-			dz = y() * dz;
+			dz = y() * dz.unaryExpr(af.dx());
 			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, {0,0});
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
-			dz = y() * dz;
+			dz = y() * dz.unaryExpr(af.dx());
 			db += dz * inv_n;
 			dw += mul(dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), { 1,0 })* inv_n;
 			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
@@ -58,10 +58,13 @@ namespace BNN {
 			return next->comp_dyn(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x, b).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
-			fma_r(y(), w, x().reshape(dim1<3>{ 1, wdim(2), 1 }), b);
-			dz = y().unaryExpr(af.dx());
-			y() = y().unaryExpr(af.fx());
+			fma_r(dz, w, x().reshape(dim1<3>{ 1, wdim(2), 1 }), b);
+			y() = dz.unaryExpr(af.fx());
 			return next->predict();
+		}
+		const Tensor& predict(const Tensor& x) override {
+			fma_r(dz, w, x.reshape(dim1<3>{ 1, wdim(2), 1 }), b);
+			return next->predict(y() = dz.unaryExpr(af.fx()));
 		}
 		Tensor dz, b;
 		Tensor w;

@@ -37,6 +37,7 @@ namespace BNN {
 		Tensor comp_dyn(const Tensor& x) const override {
 			return x.unaryExpr(af.fx());
 		}
+		const Tensor& predict(const Tensor& x) override { return y() = x.reshape(odims()).unaryExpr(af.fx()); }
 		const Tensor& predict() override { return y() = x().reshape(odims()).unaryExpr(af.fx()); }
 		Efun ef;
 		Afun af;

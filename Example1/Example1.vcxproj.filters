@@ -47,6 +47,12 @@
     <Image Include="Data\7.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Data\9.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Data\10.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

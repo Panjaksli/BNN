@@ -18,13 +18,13 @@ namespace BNN {
 		}
 		void init() override { _init(); }
 		void derivative(bool ptrain) override {
-			dz = y() * dz;
+			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
-			dz = y() * dz;
+			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions()) * inv_n;
@@ -77,11 +77,15 @@ namespace BNN {
 			else return next->comp_dyn(conv(x, w, st, pa).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
-			conv_r(y(), x().reshape(din), w, st, pa);
-			if(bias)y() = y() + b.broadcast(dim1<3>{odim(0), 1, 1});
-			dz = y().unaryExpr(af.dx());
-			y() = y().unaryExpr(af.fx());
+			conv_r(dz, x().reshape(din), w, st, pa);
+			if(bias)dz = dz + b.broadcast(dim1<3>{odim(0), 1, 1});
+			y() = dz.unaryExpr(af.fx());
 			return next->predict();
+		}
+		const Tensor& predict(const Tensor& x) override {
+			conv_r(dz, x.reshape(din), w, st, pa);
+			if(bias)dz = dz + b.broadcast(dim1<3>{odim(0), 1, 1});
+			return next->predict(y() = dz.unaryExpr(af.fx()));
 		}
 		Tensor dz, b, w;
 		dim1<3> din;
