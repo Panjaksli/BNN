@@ -23,7 +23,9 @@ namespace BNN {
 		idx Out_dim(idx i)const { return Out_dims()[i]; }
 		idx In_size()const { return product(In_dims()); }
 		idx Out_size()const { return product(Out_dims()); }
-
+		Optimizer* Optim() { return optimizer;}
+		const Optimizer* Optim() const { return optimizer;}
+		void Set_optim(Optimizer* opt) { if(opt) { if(optimizer) delete optimizer; optimizer = opt; compiled = 0; } }
 		void Add_node(Layer* hidl) { if(hidl) { graph.push_back(hidl); compiled = false; } }
 		void Add_node(Layer* hidl, idx id) { if(hidl && id < graph.size()) { graph.insert(graph.begin() + id, hidl); compiled = false; } }
 		void Rem_node() { graph.pop_back(); compiled = false; }

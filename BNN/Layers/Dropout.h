@@ -4,13 +4,14 @@ namespace BNN {
 	//Dropout layer, allows reshaping
 	class Dropout : public Layer {
 	public:
-		Dropout(float rate, Layer* prev) : Layer(prev->odims(), prev), dz(pdims()), rate(rate) { _init(); }
-		Dropout(float rate, shp3 din, Layer* prev = nullptr) : Layer(din, prev), dz(din), rate(rate) { _init(); }
+		Dropout(float rate, Layer* prev) : Layer(prev->odims(), prev), rate(rate) { _init(); }
+		Dropout(float rate, shp3 din, Layer* prev = nullptr) : Layer(din, prev), rate(rate) { _init(); }
 		void init() override { _init(); }
 		void derivative(bool ptrain) override {
-			if(ptrain) x() = (y() * dz).reshape(pdims());
+			float weight = (1.f / (1.f - rate));
+			uint32_t sd = seed;
+			if(ptrain) x() = y().reshape(pdims()).unaryExpr([&sd, weight, this](float x) { return x * (rand_fl(sd) > rate) * weight; });;
 		}
-		dim1<3> idims() const override { return dz.dimensions(); }
 		void print()const override {
 			println("Dropout\t|", "\tIn:", pdim(0), pdim(1), pdim(2),
 				"\tOut:", odim(0), odim(1), odim(2), "\tRate:", rate);
@@ -35,18 +36,31 @@ namespace BNN {
 			return next->compute(x);
 		}
 		const Tensor& predict() override {
-			y() = x().reshape(idims()) * dz;
+			float weight = (1.f / (1.f - rate));
+			uint32_t sd = seed;
+			y() = x().reshape(idims()).unaryExpr([&sd, weight, this](float x) { return x * (rand_fl(sd) > rate) * weight; });
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
-			return next->predict(y() = x.reshape(idims()) * dz);
+			float weight = (1.f / (1.f - rate));
+			uint32_t sd = seed;
+			return next->predict(y() = x.reshape(idims()).unaryExpr([&sd, weight, this](float x) { return x * (rand_fl(sd) > rate) * weight; }));
 		}
 		void update() override { _init(); }
 		void _init() {
-			float weight = (1.f / (1.f - rate));
-			dz = dz.random().unaryExpr([weight, this](float x) {return (x > rate) * weight; });
+			seed = xorshift32();
 		}
-		Tensor dz;
+		static uint32_t random(uint32_t& x) {
+			x ^= x << 13;
+			x ^= x >> 17;
+			x ^= x << 5;
+			return x;
+		}
+		static float rand_fl(uint32_t& x) {
+			uint32_t y = 0x3f800000 | (random(x) & 0x007FFFFF);
+			return *(float*)&y - 1.f;
+		}
 		float rate = 0.1f;
+		uint32_t seed = 0;
 	};
 }
