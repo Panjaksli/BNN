@@ -2,6 +2,7 @@
 #include "Layer.h"
 #include "Input.h"
 #include "Output.h"
+#include "OutShuf.h"
 #include "Conv.h"
 #include "AvgPool.h"
 #include "AvgUpool.h"
@@ -16,6 +17,8 @@ namespace BNN {
 			return Input::load(in);
 		else if(token == "Output")
 			return Output::load(in);
+		else if(token == "OutShuf")
+			return OutShuf::load(in);
 		else if(token == "AvgPool")
 			return AvgPool::load(in);
 		else if(token == "AvgUpool")

@@ -92,5 +92,8 @@
     <ClInclude Include="BNN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Layers\OutShuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -3,12 +3,12 @@
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {
-		T_None, t_Input, t_Output, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout
+		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout
 	};
 	class Layer {
 	public:
 		Layer() {}
-		Layer(dim1<3> dims, Layer* _prev = nullptr) : a(dims), prev(_prev) { if(prev)prev->set_next(this); }
+		Layer(shp3 dims, Layer* _prev = nullptr) : a(dims), prev(_prev) { if(prev)prev->set_next(this); }
 		virtual ~Layer() {}
 		//random init weights, biases etc...
 		virtual void init() {}
@@ -52,8 +52,8 @@ namespace BNN {
 		idx odim(idx i) const { return odims()[i]; }
 		idx osize()const { return product(odims()); }
 		//dims of w and b if applicable
-		virtual dim1<3> wdims() const { return { 0,0,0 }; }
-		virtual dim1<3> bdims() const { return { 0,0,0 }; }
+		virtual dim1<3> wdims() const { return dim1<3>{ 0,0,0 }; }
+		virtual dim1<3> bdims() const { return dim1<3>{ 0,0,0 }; }
 		idx wdim(idx i) const { return wdims()[i]; }
 		idx bdim(idx i) const { return bdims()[i]; }
 		bool trainable() const { return type() == t_Conv || type() == t_TConv || type() == t_Dense;}

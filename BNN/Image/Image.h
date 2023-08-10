@@ -33,14 +33,14 @@ namespace BNN {
 		inline uchar& operator()(int i, int j, int k) {
 			return data[(i * w + j) * n + k];
 		}
-		inline ptrdiff_t size()const {
+		inline idx size()const {
 			return w * h * n;
 		}
-		inline std::array<ptrdiff_t, 3> dim()const {
-			return std::array<ptrdiff_t, 3>{n, h, w};
+		inline dim1<3> dim()const {
+			return dim1<3>{n, h, w};
 		}
-		inline std::array<ptrdiff_t, 3> pdim()const {
-			return std::array<ptrdiff_t, 3>{n, h + h % 2, w + w % 2};
+		inline dim1<3> pdim()const {
+			return dim1<3>{n, h + h % 2, w + w % 2};
 		}
 		friend void swap(Image& i1, Image& i2) {
 			std::swap(i1.data, i2.data);

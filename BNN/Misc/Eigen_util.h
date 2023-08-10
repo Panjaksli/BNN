@@ -7,15 +7,17 @@ namespace BNN {
 	using Tensor = Eigen::Tensor<float, 3>;
 	using Tenarr = Eigen::Tensor<float, 4>;
 	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>>;
-	using idx = Eigen::Index;
+	using idx = Eigen::DenseIndex;
+	template <size_t N>
+	using dim1 = Eigen::DSizes<idx, N>;
 	//using shp2 = Eigen::IndexPair<idx>;
 	struct shp1 {
 		shp1() {}
 		shp1(idx first) : first(first) {}
 		const idx& operator[](idx i) const { return i ? first : first; }
 		idx& operator[](idx i) { return i ? first : first; }
-		operator auto() {
-			return std::array<idx, 3>{1, first, 1};
+		operator dim1<3>() {
+			return dim1<3>{1, first, 1};
 		}
 		idx first;
 	};
@@ -26,7 +28,7 @@ namespace BNN {
 		const idx& operator[](idx i) const { return i ? second : first; }
 		idx& operator[](idx i) { return i ? second : first; }
 		operator auto() {
-			return std::array<idx, 3>{1, first, second};
+			return dim1<3>{1, first, second};
 		}
 		friend shp2 operator-(shp2 x) { return shp2{ -x[0],-x[1] }; }
 		friend shp2 operator+(shp2 x, shp2 y) { return shp2{ x[0] + y[0],x[1] + y[1] }; }
@@ -35,23 +37,21 @@ namespace BNN {
 		idx second;
 	};
 	template <size_t N>
-	using dim1 = Eigen::array<idx, N>;
-	template <size_t N>
 	using dim2 = Eigen::array<shp2, N>;
 	template <class T, size_t N>
 	using dimx = Eigen::array<T, N>;
 	struct shp3 {
 		shp3() {}
-		shp3(idx d1) : data{ 1,d1,1 } {}
-		shp3(idx d1, idx d2) : data{ 1,d1,d2 } {}
-		shp3(idx d1, idx d2, idx d3) : data{ d1,d2,d3 } {}
-		shp3(const dim1<3>& d) : data(d) {}
-		const idx& operator[](idx i) const { return data[i]; }
-		idx& operator[](idx i) { return data[i]; }
+		shp3(idx d1) : elem{ 1,d1,1 } {}
+		shp3(idx d1, idx d2) : elem{ 1,d1,d2 } {}
+		shp3(idx d1, idx d2, idx d3) : elem{ d1,d2,d3 } {}
+		shp3(const dim1<3>& d) : elem(d) {}
+		const idx& operator[](idx i) const { return elem[i]; }
+		idx& operator[](idx i) { return elem[i]; }
 		operator auto() {
-			return data;
+			return elem;
 		}
-		dim1<3> data;
+		dim1<3> elem;
 	};
 	inline idx product(const dim1<3>& x) { return x[0] * x[1] * x[2]; }
 	using shp4 = dim1<4>;

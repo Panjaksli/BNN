@@ -84,8 +84,9 @@ namespace BNN {
 		return compiled = true;
 	}
 
-	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr, int epochs, int nlog) {
+	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr,float rate, int epochs, int nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
+		if(rate > 0) optimizer->alpha = rate;
 		if(x0.dimension(0) < nthr) nthr = x0.dimension(0);
 		float mult = 1.f / nthr;
 		int step = x0.dimension(0) / nthr;
@@ -112,8 +113,9 @@ namespace BNN {
 		*this = net;
 		return true;
 	}
-	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, int epochs, int nlog) {
+	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0,float rate, int epochs, int nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
+		if(rate > 0) optimizer->alpha = rate;
 		return train_job(x0, y0, epochs, nlog);
 	}
 
@@ -123,16 +125,16 @@ namespace BNN {
 		float min_cost = 1e6f;
 		double t = timer();
 		double dt = timer();
-		float inv_ep = 1.f / epochs;
 		int log_step = epochs / nlog;
 		log_step = max(1, log_step);
 		for(int i = 1; i <= epochs; i++) {
 			float cost = 0;
 			for(int j = 0; j < x0.dimension(0); j++) {
 				graph.front()->predict(x0.chip(j, 0));
-				cost += graph.back()->error(y0.chip(j, 0)) * inv_ep;
+				cost += graph.back()->error(y0.chip(j, 0));
 				optimizer->get_grad();
 			}
+			cost *= optimizer->inv_n;
 			if(cost > 1e3f) { println("Error:  Failed training !!!"); return false; }
 			min_cost = min(cost, min_cost);
 			optimizer->update_grad();

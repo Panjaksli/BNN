@@ -13,8 +13,8 @@ namespace BNN {
 		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
-		bool Train_single(const Tenarr& x0, const Tenarr& y0, int epochs = 1000, int nlog = 100);
-		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr = 16, int epochs = 1000, int nlog = 100);
+		bool Train_single(const Tenarr& x0, const Tenarr& y0, float rate = 0, int epochs = 1000, int nlog = 100);
+		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr = 16, float rate = 0, int epochs = 1000, int nlog = 100);
 		void Clear();
 		void Print() const;
 		dim1<3> In_dims()const { return graph.front()->idims(); }
@@ -23,8 +23,8 @@ namespace BNN {
 		idx Out_dim(idx i)const { return Out_dims()[i]; }
 		idx In_size()const { return product(In_dims()); }
 		idx Out_size()const { return product(Out_dims()); }
-		Optimizer* Optim() { return optimizer;}
-		const Optimizer* Optim() const { return optimizer;}
+		Optimizer* Optim() { return optimizer; }
+		const Optimizer* Optim() const { return optimizer; }
 		void Set_optim(Optimizer* opt) { if(opt) { if(optimizer) delete optimizer; optimizer = opt; compiled = 0; } }
 		void Add_node(Layer* hidl) { if(hidl) { graph.push_back(hidl); compiled = false; } }
 		void Add_node(Layer* hidl, idx id) { if(hidl && id < graph.size()) { graph.insert(graph.begin() + id, hidl); compiled = false; } }
@@ -33,7 +33,7 @@ namespace BNN {
 
 		dim1<3> Dim_of(idx id)const { return graph[id]->odims(); }
 		idx Size_of(idx id)const { return graph[id]->osize(); }
-		
+
 		Tensor Compute(const Tensor& x) const {
 			return graph.front()->compute(x);
 		}
@@ -45,9 +45,9 @@ namespace BNN {
 			return y;
 		}
 		NNet& Append(const NNet& other);
-		void Save(const std::string &name) const;
+		void Save(const std::string& name) const;
 		void Save() const;
-		bool Load(const std::string &name);
+		bool Load(const std::string& name);
 		bool Load();
 		void Save_image(const Tensor& x) const;
 		void Save_images(const Tenarr& x) const;
@@ -65,7 +65,7 @@ namespace BNN {
 			optimizer->reset_all();
 		}
 		static bool valid_graph(const vector<Layer*> graph) {
-			return graph.size() >= 2 && graph.front()->type() == t_Input && graph.back()->type() == t_Output;
+			return graph.size() >= 2 && graph.front()->type() == t_Input && (graph.back()->type() == t_Output || graph.back()->type() == t_OutShuf);
 		}
 		bool valid() const { return optimizer && valid_graph(graph); }
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
