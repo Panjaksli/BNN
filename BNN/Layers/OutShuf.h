@@ -2,8 +2,6 @@
 #include "Layer.h"
 namespace BNN {
 	//OutShuf layer, allows shuffling multiple channels to rgb image, provides error calculation (output gradient)
-	//Eigen::Tensor<float, 3> y = x.reshape(dim1<5>{c / r2, r, r, h, w}).shuffle(dim1<5>{0, 2, 3, 1, 4}).reshape(dim1<3>{c / r2, h* r, w* r});
-	//Eigen::Tensor<float, 3> z = x - y.reshape(dim1<5>{c / r2, r, h, r, w}).shuffle(dim1<5>{0, 3, 1, 2, 4}).reshape(x.dimensions());
 	class OutShuf : public Layer {
 	public:
 		OutShuf() {}
@@ -48,7 +46,7 @@ namespace BNN {
 				.unaryExpr(af.fx());
 		}
 		Tensor comp_dyn(const Tensor& x) const override {
-			return x.reshape(dim1<5>{odim(0), r, r, idim(1), idim(2)})
+			return x.reshape(dim1<5>{x.dimension(0) / (r * r), r, r, x.dimension(1), x.dimension(2)})
 				.shuffle(dim1<5>{0, 2, 3, 1, 4})
 				.reshape(odims())
 				.unaryExpr(af.fx());

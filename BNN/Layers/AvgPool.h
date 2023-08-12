@@ -19,7 +19,7 @@ namespace BNN {
 			w.setConstant(float(st[0] * st[1]) / w.size());
 			auto dy = y().inflate(dim1<3>{ 1, st[0], st[1] });
 			//much faster than pooling...
-			if(ptrain) aconv_r(x().reshape(din), dy, w, 1, ks - pa - 1);
+			if(ptrain) all_convolve({ x(), din }, dy, w, 1, ks - pa - 1);
 		}
 		void print()const override {
 			println("AvgPl\t|", "\tIn:", din[0], din[1], din[2],
@@ -52,12 +52,12 @@ namespace BNN {
 		}
 		const Tensor& predict() override {
 			w.setConstant(1.f / w.size());
-			aconv_r(y(), x().reshape(din), w, st, pa);
+			all_convolve(y(), x().reshape(din), w, st, pa);
 			return next->predict();
 		}
-		const Tensor& predict(const Tensor &x) override {
+		const Tensor& predict(const Tensor& x) override {
 			w.setConstant(1.f / w.size());
-			aconv_r(y(), x.reshape(din), w, st, pa);
+			all_convolve(y(), x.reshape(din), w, st, pa);
 			return next->predict(y());
 		}
 		Tensor w;

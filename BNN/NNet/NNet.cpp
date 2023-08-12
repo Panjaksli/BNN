@@ -44,7 +44,7 @@ namespace BNN {
 			println("Error:  Number of training samples mismatch !");
 			return false;
 		}
-		else if(!valid()) {
+		else if(!Valid()) {
 			println("Error:  Invalid network graph !");
 			return false;
 		}
@@ -64,7 +64,7 @@ namespace BNN {
 	}
 	bool NNet::Compile(bool log) {
 		if(compiled) return true;
-		else if(!valid()) {
+		else if(!Valid()) {
 			if(log) println("Error:  Incomplete model ! (Node is missing...)");
 			return compiled = false;
 		}
@@ -84,7 +84,7 @@ namespace BNN {
 		return compiled = true;
 	}
 
-	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr,float rate, int epochs, int nlog) {
+	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr, float rate, int epochs, int nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
 		if(x0.dimension(0) < nthr) nthr = x0.dimension(0);
@@ -92,18 +92,18 @@ namespace BNN {
 		int step = x0.dimension(0) / nthr;
 		bool result = 1;
 		vector<NNet> nets(nthr, *this);
-		dim1<4> dx{step, x0.dimension(1), x0.dimension(2), x0.dimension(3)};
-		dim1<4> dy{step, y0.dimension(1), y0.dimension(2), y0.dimension(3)};
+		dim1<4> dx{ step, x0.dimension(1), x0.dimension(2), x0.dimension(3) };
+		dim1<4> dy{ step, y0.dimension(1), y0.dimension(2), y0.dimension(3) };
 #pragma omp parallel for
 		for(int i = 0; i < nthr; i++) {
-			dim1<4> o{i* step, 0, 0, 0};
+			dim1<4> o{ i * step, 0, 0, 0 };
 			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == 0);
 #pragma omp atomic
 			result &= res;
 		}
 		if(!result) return false;
 		NNet net(*this);
-		net.zero();
+		net.Zero();
 		for(const auto& n : nets) {
 			for(int i = 0; i < net.graph.size(); i++) {
 				if(net.graph[i]->get_b()) *net.graph[i]->get_b() += mult * *n.graph[i]->get_b();
@@ -113,7 +113,7 @@ namespace BNN {
 		*this = net;
 		return true;
 	}
-	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0,float rate, int epochs, int nlog) {
+	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, float rate, int epochs, int nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
 		return train_job(x0, y0, epochs, nlog);
@@ -148,7 +148,7 @@ namespace BNN {
 	}
 	void NNet::Save(const std::string& folder) const {
 		create_directories(folder);
-		std::ofstream out(name + "/data.bin",std::ios::binary | std::ios::out);
+		std::ofstream out(name + "/data.bin", std::ios::binary | std::ios::out);
 		graph.front()->save(out);
 		optimizer->save(out);
 	}

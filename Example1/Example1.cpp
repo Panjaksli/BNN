@@ -22,19 +22,17 @@ int main() {
 	//hidden layers
 	vector<Layer*> top;
 	top.push_back(new Input(scl.Out_dims()));
-	top.push_back(new Conv(12, 3, 1, 1, top.back(), false));
-	top.push_back(new Conv(12, 3, 1, 1, top.back(), false));
-	top.push_back(new OutShuf(top.back(), 2, Afun::t_sat, Efun::t_mse));;
-	auto opt = new Adam(0.002f);
-	NNet net(top, opt, "ups_c3x12_c3x12_os2");
+	top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_lrelu));
+	top.push_back(new OutShuf(top.back(), 2));
+	auto opt = new Adam(0.005f);
+	NNet net(top, opt, "ups_c5_ps2");
 #else
-	NNet net("ups_c5_os2");
+	NNet net("ups_c5_ps2");
 #endif
 	Tenarr y(out.size(), net.Out_dim(0), net.Out_dim(1), net.Out_dim(2));
 	for(int i = 0; i < out.size(); i++) y.chip(i, 0) = out[i].tensor();
-	//scl.Save_images(y);
 	for(int i = 0; i < 100; i++) {
-		if(!net.Train_parallel(x, y, 16,0.0001, 100, 100)) break;
+		if(!net.Train_parallel(x, y, 16, 0, 100, 100)) break;
 		net.Save();
 		net.Save_images(x);
 	}

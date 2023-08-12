@@ -6,13 +6,15 @@ namespace BNN {
 		public:
 			SGD_node() : node(nullptr), valid(0) {}
 			SGD_node(Layer* node) : dw(node->wdims()), db(node->bdims()), node(node),
-				valid(node->trainable()) { init(); }
+				valid(node->trainable()) {
+				init();
+			}
 			void get_grad(bool ptrain, float inv_n) {
-				if (valid)node->gradient(dw, db, ptrain, inv_n);
+				if(valid)node->gradient(dw, db, ptrain, inv_n);
 				else node->derivative(ptrain);
 			}
 			void update_grad(float alpha) {
-				if (valid) {
+				if(valid) {
 					update(*node->get_w(), dw, alpha);
 					update(*node->get_b(), db, alpha);
 					reset_grad();
@@ -20,13 +22,13 @@ namespace BNN {
 				node->update();
 			}
 			void reset_grad() {
-				if (valid)init();
+				if(valid)init();
 			}
 			void reset_cache() {
-				if (valid)init();
+				if(valid)init();
 			}
 			void init() {
-				if (valid) {
+				if(valid) {
 					dw.setZero();
 					db.setZero();
 				}
@@ -45,7 +47,7 @@ namespace BNN {
 			AGD_node() {}
 			AGD_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
 			void update_grad(float alpha, float mu) {
-				if (valid) {
+				if(valid) {
 					update(*node->get_w(), vw, dw, alpha, mu);
 					update(*node->get_b(), vb, db, alpha, mu);
 					reset_grad();
@@ -53,10 +55,10 @@ namespace BNN {
 				node->update();
 			}
 			void reset_cache() {
-				if (valid) init();
+				if(valid) init();
 			}
 			void init() {
-				if (valid) {
+				if(valid) {
 					vw.setZero();
 					vb.setZero();
 				}
@@ -75,7 +77,7 @@ namespace BNN {
 			NAG_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
 
 			void update_grad(float alpha, float mu) {
-				if (valid) {
+				if(valid) {
 					update(*node->get_w(), vw, dw, alpha, mu);
 					update(*node->get_b(), vb, db, alpha, mu);
 					reset_grad();
@@ -83,11 +85,11 @@ namespace BNN {
 				node->update();
 			}
 			void reset_cache() {
-				if (valid)
+				if(valid)
 					init();
 			}
 			void init() {
-				if (valid) {
+				if(valid) {
 					vw.setZero();
 					vb.setZero();
 				}
@@ -105,7 +107,7 @@ namespace BNN {
 			RMS_node() {}
 			RMS_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
 			void update_grad(float alpha, float beta, float eps) {
-				if (valid) {
+				if(valid) {
 					update(*node->get_w(), vw, dw, alpha, beta, eps);
 					update(*node->get_b(), vb, db, alpha, beta, eps);
 					reset_grad();
@@ -113,10 +115,10 @@ namespace BNN {
 				node->update();
 			}
 			void reset_cache() {
-				if (valid) init();
+				if(valid) init();
 			}
 			void init() {
-				if (valid) {
+				if(valid) {
 					vw.setZero();
 					vb.setZero();
 				}
@@ -134,7 +136,7 @@ namespace BNN {
 			ADAM_node() {}
 			ADAM_node(Layer* node) : SGD_node(node), mw(node->wdims()), mb(node->bdims()), vw(node->wdims()), vb(node->bdims()) { init(); }
 			void update_grad(float alpha, float beta1, float beta2, float eps) {
-				if (valid) {
+				if(valid) {
 					update(*node->get_w(), mw, vw, dw, alpha, beta1, beta2, eps);
 					update(*node->get_b(), mb, vb, db, alpha, beta1, beta2, eps);
 					reset_grad();
@@ -142,11 +144,11 @@ namespace BNN {
 				node->update();
 			}
 			void reset_cache() {
-				if (valid)
+				if(valid)
 					init();
 			}
 			void init() {
-				if (valid) {
+				if(valid) {
 					vw.setZero();
 					vb.setZero();
 					mw.setZero();

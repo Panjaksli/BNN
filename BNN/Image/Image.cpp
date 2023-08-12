@@ -20,7 +20,7 @@ namespace BNN {
 		return res;
 	}
 	Image::Image(const Tensor& in) : data((uchar*)malloc(product(in.dimensions()))), w(in.dimension(2)), h(in.dimension(1)), n(in.dimension(0)) {
-		Tensor tmp = in.clip(0.f,1.f) * 255.f + 0.5f;
+		Tensor tmp = in.clip(0.f, 1.f) * 255.f + 0.5f;
 		for(int j = 0; j < w; j++) {
 			for(int i = 0; i < h; i++) {
 				for(int k = 0; k < n; k++) {

@@ -4,7 +4,7 @@ namespace BNN {
 	//Can be used for either unpooling or upsampling
 	class AvgUpool : public Layer {
 	public:
-		AvgUpool(){}
+		AvgUpool() {}
 		AvgUpool(shp3 din, shp2 ks, shp2 st, shp2 pa, Layer* prev = nullptr) :
 			Layer({ din[0],t_dim(din[1],ks[0],st[0],pa[0]),t_dim(din[2],ks[1],st[1],pa[1]) }, prev),
 			w(1, ks[0], ks[1]), din(din), ks(ks), st(st), pa(pa) {
@@ -17,7 +17,7 @@ namespace BNN {
 		}
 		void derivative(bool ptrain) override {
 			w.setConstant(1.f / w.size());
-			if(ptrain) aconv_r(x().reshape(din), y(), w, st, pa);
+			if(ptrain) all_convolve({ x(),din }, y(), w, st, pa);
 		}
 		void print()const override {
 			println("AvgUpl\t|", "\tIn:", din[0], din[1], din[2],
@@ -53,13 +53,13 @@ namespace BNN {
 		const Tensor& predict() override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
 			auto ix = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
-			aconv_r(y(), ix, w, 1, ks - pa - 1);
+			all_convolve(y(), ix, w, 1, ks - pa - 1);
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
 			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
-			aconv_r(y(), ix, w, 1, ks - pa - 1);
+			all_convolve(y(), ix, w, 1, ks - pa - 1);
 			return next->predict(y());
 		}
 		Tensor w;

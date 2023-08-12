@@ -12,7 +12,6 @@ namespace BNN {
 	using std::min;
 	using std::max;
 	using std::clamp;
-	using uint = uint_fast32_t;
 	using uchar = uint_fast8_t;
 	inline uint32_t xorshift32() {
 		thread_local static uint32_t x = 0x6f9f;

@@ -4,7 +4,7 @@ namespace BNN {
 	//Allows reshaping of the input
 	class Input : public Layer {
 	public:
-		Input(){}
+		Input() {}
 		Input(shp3 d) : Layer(d) {}
 		void input(const Tensor& x) {
 			y() = x.reshape(odims());

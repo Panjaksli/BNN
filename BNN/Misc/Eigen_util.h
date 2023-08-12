@@ -4,10 +4,10 @@
 
 namespace BNN {
 	using Eigen::TensorBase;
-	using Tensor = Eigen::Tensor<float, 3>;
-	using Tenarr = Eigen::Tensor<float, 4>;
-	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>>;
-	using idx = Eigen::DenseIndex;
+	using Tensor = Eigen::Tensor<float, 3, 0, int>;
+	using Tenarr = Eigen::Tensor<float, 4, 0, int>;
+	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>,0,int>;
+	using idx = int;
 	template <size_t N>
 	using dim1 = Eigen::DSizes<idx, N>;
 	//using shp2 = Eigen::IndexPair<idx>;
@@ -62,12 +62,188 @@ namespace BNN {
 		c.setRandom();
 		c = (max - min) * c + min;
 	}
+
+	struct Reshape {
+		Reshape(Tensor& data) : data(data), dim(data.dimensions()) {}
+		Reshape(Tensor& data, shp3 dim) : data(data), dim(dim) {}
+		const float& operator() (idx i, idx j, idx k)const { return data.data()[i + j * dim[0] + k * dim[0] * dim[1]]; }
+		float& operator() (idx i, idx j, idx k) { return data.data()[i + j * dim[0] + k * dim[0] * dim[1]]; }
+		Tensor& data;
+		dim1<3> dim;
+	};
+
+	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		idx och = b.dimension(0) / ich;
+		if(ich <= 1 && och <= 1) {
+			if(st[0] <= 1 && st[1] <= 1) {
+				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
+				c.data.reshape(c.dim).chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
+			}
+			else {
+				float tmp;
+				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+						tmp = 0;
+						int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+						int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+						for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+							for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+								tmp += a(0, j + m, i + l) * b(0, m, l);
+							}
+						}
+						c(0, p, o) = tmp;
+					}
+				}
+			}
+		}
+		else if(ich <= 1) {
+			float tmp[och];
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					std::fill(tmp, tmp + och, 0);
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx k = 0; k < och; k++) {
+								tmp[k] += a(0, j + m, i + l) * b(k, m, l);
+							}
+						}
+					}
+					std::copy(tmp, tmp + och, &c(0, p, o));
+				}
+			}
+		}
+		else if(och <= 1) {
+			float tmp = 0;
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					tmp = 0;
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx n = 0; n < ich; n++) {
+								tmp += a(n, j + m, i + l) * b(n, m, l);
+							}
+						}
+					}
+					c(0, p, o) = tmp;
+				}
+			}
+		}
+		else {
+			float tmp[och];
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					std::fill(tmp, tmp + och, 0);
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx k = 0; k < och; k++) {
+								for(idx n = 0; n < ich; n++) {
+									tmp[k] += a(n, j + m, i + l) * b(k * ich + n, m, l);
+								}
+							}
+						}
+					}
+					std::copy(tmp, tmp + och, &c(0, p, o));
+				}
+			}
+		}
+	}
+	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ach = a.dimension(0);
+		idx bch = b.dimension(0);
+		idx och = ach * bch;
+		if(ach <= 1 && bch <= 1) {
+			if(st[0] <= 1 && st[1] <= 1) {
+				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
+				c.data.reshape(c.dim).chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
+			}
+			else {
+				float tmp;
+				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+						tmp = 0;
+						int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+						int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+						for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+							for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+								tmp += a(0, j + m, i + l) * b(0, m, l);
+							}
+						}
+						c(0, p, o) = tmp;
+					}
+				}
+			}
+		}
+		else if(ach <= 1) {
+			float tmp[och];
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					std::fill(tmp, tmp + och, 0);
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx k = 0; k < bch; k++) {
+								tmp[k] += a(0, j + m, i + l) * b(k, m, l);
+							}
+						}
+					}
+					std::copy(tmp, tmp + och, &c(0, p, o));
+				}
+			}
+		}
+		else if(bch <= 1) {
+			float tmp[och];
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					std::fill(tmp, tmp + och, 0);
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx n = 0; n < ach; n++) {
+								tmp[n] += a(n, j + m, i + l) * b(0, m, l);
+							}
+						}
+					}
+					std::copy(tmp, tmp + och, &c(0, p, o));
+				}
+			}
+		}
+		else {
+			float tmp[och];
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+					std::fill(tmp, tmp + och, 0);
+					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
+						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+							for(idx k = 0; k < bch; k++) {
+								for(idx n = 0; n < ach; n++) {
+									tmp[k * ach + n] += a(n, j + m, i + l) * b(k, m, l);
+								}
+							}
+						}
+					}
+					std::copy(tmp, tmp + och, &c(0, p, o));
+				}
+			}
+		}
+	}
+
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
 	template <class derived>
 	inline void mul_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
 		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		for(int i = 0; i < a.dimension(0); i++) {
-			for(int j = 0; j < b.dimension(0); j++) {
+		for(idx i = 0; i < a.dimension(0); i++) {
+			for(idx j = 0; j < b.dimension(0); j++) {
 				c.chip(i * b.dimension(0) + j, 0) = a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims });
 			}
 		}
@@ -76,8 +252,8 @@ namespace BNN {
 	template <class derived>
 	inline void fma_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, const Tensor& c, shp2 dims = { 1, 0 }) {
 		auto& d = const_cast<Eigen::TensorBase<derived>&>(res);
-		for(int i = 0; i < a.dimension(0); i++) {
-			for(int j = 0; j < b.dimension(0); j++) {
+		for(idx i = 0; i < a.dimension(0); i++) {
+			for(idx j = 0; j < b.dimension(0); j++) {
 				d.chip(i * b.dimension(0) + j, 0) = a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims }) + c.chip(i * b.dimension(0) + j, 0);
 			}
 		}
@@ -88,81 +264,29 @@ namespace BNN {
 	inline void mul_acc_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
 		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
 		c.setZero();
-		for(int i = 0; i < a.dimension(0); i++) {
-			for(int j = 0; j < b.dimension(0); j++) {
+		for(idx i = 0; i < a.dimension(0); i++) {
+			for(idx j = 0; j < b.dimension(0); j++) {
 				c.chip(i, 0) += a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{dims});
 			}
 		}
 	}
 	//convolute and accumulate filters -> b / a filters (b HAS to be multiple of a)
-	template <class derived>
-	inline void conv_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 str, shp2 pad = { 0,0 }) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		c.setZero();
-		idx d0 = b.dimension(0) / a.dimension(0);
-		dim1<2> st{str[0], str[1]};
-		dim2<2> pa{ shp2{ pad[0], pad[0]}, shp2{ pad[1], pad[1] }};
-		for(int i = 0; i < d0; i++) {
-			for(int j = 0; j < a.dimension(0); j++) {
-				c.chip(i, 0) += a.chip(j, 0).pad(pa).convolve(b.chip(i * a.dimension(0) + j, 0), dim1<2>{0, 1}).stride(st);
-			}
-		}
-	}
-	//convolute each slice with ONE filter
-	template <class derived>
-	inline void aconv_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 str, shp2 pad = { 0,0 }) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		dim1<2> st{str[0], str[1]};
-		dim2<2> pa{ shp2{ pad[0], pad[0]}, shp2{ pad[1], pad[1] }};
-		for(int i = 0; i < a.dimension(0); i++) {
-			c.chip(i, 0) = a.chip(i, 0).pad(pa).convolve(b.chip(0, 0), dim1<2>{0, 1}).stride(st);
-		}
-	}
-	//convolute out ALL filters -> meaning each combination of a b creates a filter -> a * b filters
-	template <class derived>
-	inline void iconv_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		dim1<2> st{str[0], str[1]};
-		dim2<2> pa{ shp2{ pad[0], pad[0]}, shp2{ pad[1], pad[1] }};
-		for(int i = 0; i < b.dimension(0); i++) { //4
-			for(int j = 0; j < a.dimension(0); j++) { //2
-				c.chip(i * a.dimension(0) + j, 0) = a.chip(j, 0).pad(pa).convolve(b.chip(i, 0), dim1<2>{0, 1}).stride(st);
-			}
-		}
-	}
-	inline void pool_max_r(Tensor& c, const Tensor& a, shp2 ker, shp2 str = 1) {
+
+	inline void pool_max_r(Reshape c, const Tensor& a, shp2 ker, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
 		idx d2 = c_dim(a.dimension(2), ker[1], str[1], 0);
-		dim1<2> st{str[0], str[1]};
-		dim1<2> ks{ker[0], ker[1]};
-			for(int k = 0; k < d2; k++) {
-				for(int j = 0; j < d1; j++) {
-					for(int i = 0; i < d0; i++) {
-					dim1<2> off{j* st[0], k* st[1]};
+		dim1<2> st{ str[0], str[1] };
+		dim1<2> ks{ ker[0], ker[1] };
+		for(idx k = 0; k < d2; k++) {
+			for(idx j = 0; j < d1; j++) {
+				for(idx i = 0; i < d0; i++) {
+					dim1<2> off{ j * st[0], k * st[1] };
 					c(i, j, k) = fsca(a.chip(i, 0).slice(off, ks).maximum()).coeff();
 				}
 			}
 		}
 	}
-	//DONT USE THIS , THIS IS SLOW (3x slower than just creating kernel manually and convoluting...)
-	inline void pool_avg_r(Tensor& c, const Tensor& a, shp2 ker, shp2 str = 1, shp2 pad = 0) {
-		idx d0 = a.dimension(0);
-		idx d1 = c_dim(a.dimension(1), ker[0], str[0], pad[0]);
-		idx d2 = c_dim(a.dimension(2), ker[1], str[1], pad[1]);
-		dim1<2> st{str[0], str[1]};
-		dim1<2> ks{ker[0], ker[1]};
-		dim2<2> pa{ shp2{ pad[0], pad[0]}, shp2{ pad[1], pad[1] }};
-		for(int k = 0; k < d2; k++) {
-			for(int j = 0; j < d1; j++) {
-				for(int i = 0; i < d0; i++) {
-					dim1<2> off{j* st[0], k* st[1]};
-					c(i, j, k) = fsca(a.chip(i, 0).pad(pa).slice(off, ks).sum()).coeff() * (1.f / (ks[0] * ks[1]));
-				}
-			}
-		}
-	}
-
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
 	inline Tensor mul(const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
 		Tensor c(a.dimension(0) * b.dimension(0), dims[0] ? a.dimension(1) : a.dimension(2), dims[1] ? b.dimension(1) : b.dimension(2));
@@ -182,12 +306,12 @@ namespace BNN {
 		return c;
 	}
 
-	inline Tensor iconv(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
+	inline Tensor aconv(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
 		idx d0 = b.dimension(0) * a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
 		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
 		Tensor c(d0, d1, d2);
-		iconv_r(c, a, b, str, pad);
+		all_convolve(c, a, b, str, pad);
 		return c;
 	}
 
@@ -196,17 +320,10 @@ namespace BNN {
 		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
 		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
 		Tensor c(d0, d1, d2);
-		conv_r(c, a, b, str, pad);
+		convolve(c, a, b, str, pad);
 		return c;
 	}
-	inline Tensor aconv(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
-		idx d0 = a.dimension(0);
-		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
-		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
-		Tensor c(d0, d1, d2);
-		aconv_r(c, a, b, str, pad);
-		return c;
-	}
+
 	inline Tensor pool_max(const Tensor& a, shp2 ker = 2, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
@@ -215,43 +332,11 @@ namespace BNN {
 		pool_max_r(c, a, ker, str);
 		return c;
 	}
-	inline Tensor pool_avg(const Tensor& a, shp2 ker = 2, shp2 str = 1, shp2 pad = 0) {
-		idx d0 = a.dimension(0);
-		idx d1 = c_dim(a.dimension(1), ker[0], str[0], pad[0]);
-		idx d2 = c_dim(a.dimension(2), ker[1], str[1], pad[1]);
-		Tensor c(d0, d1, d2);
-		pool_avg_r(c, a, ker, str, pad);
-		return c;
-	}
-	inline Tenarr pool_avg4(const Tenarr& a, shp2 ker = 2, shp2 str = 1, shp2 pad = 0) {
-		idx d0 = a.dimension(1);
-		idx d1 = c_dim(a.dimension(2), ker[0], str[0], pad[0]);
-		idx d2 = c_dim(a.dimension(3), ker[1], str[1], pad[1]);
-		Tensor c(d0, d1, d2);
-		Tenarr d(a.dimension(0), d0, d1, d2);
-		for(int i = 0; i < a.dimension(0); i++) {
-			pool_avg_r(c, a.chip(i, 0), ker, str, pad);
-			d.chip(i, 0) = c;
-		}
-		return d;
-	}
-	inline Tenarr pool_max4(const Tenarr& a, shp2 ker = 2, shp2 str = 1) {
-		idx d0 = a.dimension(1);
-		idx d1 = c_dim(a.dimension(2), ker[0], str[0], 0);
-		idx d2 = c_dim(a.dimension(3), ker[1], str[1], 0);
-		Tensor c(d0, d1, d2);
-		Tenarr d(a.dimension(0), d0, d1, d2);
-		for(int i = 0; i < a.dimension(0); i++) {
-			pool_max_r(c, a.chip(i, 0), ker, str);
-			d.chip(i, 0) = c;
-		}
-		return d;
-	}
 
 	template <class T>
 	inline void printnp(const T& t) {
 		print("Tensor");
-		for(int i = 0; i < t.NumDimensions; i++) {
+		for(idx i = 0; i < t.NumDimensions; i++) {
 			print(t.dimension(i));
 		}
 		print("\n");

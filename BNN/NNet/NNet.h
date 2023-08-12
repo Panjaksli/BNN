@@ -51,14 +51,15 @@ namespace BNN {
 		bool Load();
 		void Save_image(const Tensor& x) const;
 		void Save_images(const Tenarr& x) const;
-	private:
-		void init() {
+		void Init() {
 			for(auto& g : graph) {
 				g->init();
 			}
 			optimizer->reset_all();
 		}
-		void zero() {
+		bool Valid() const { return optimizer && valid_graph(graph); }
+	private:
+		void Zero() {
 			for(auto& g : graph) {
 				g->zero();
 			}
@@ -67,7 +68,6 @@ namespace BNN {
 		static bool valid_graph(const vector<Layer*> graph) {
 			return graph.size() >= 2 && graph.front()->type() == t_Input && (graph.back()->type() == t_Output || graph.back()->type() == t_OutShuf);
 		}
-		bool valid() const { return optimizer && valid_graph(graph); }
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
 		bool train_job(const Tenarr& x0, const Tenarr& y0, int epochs = 1000, int nlog = 100, bool log = 1);
 		vector<Layer*> graph;

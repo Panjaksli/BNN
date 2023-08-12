@@ -9,8 +9,9 @@
 #include "Dense.h"
 #include "TConv.h"
 #include "Dropout.h"
+#include "PixShuf.h"
 namespace BNN {
-	inline Layer* Layer_load(std::istream &in) {
+	inline Layer* Layer_load(std::istream& in) {
 		std::string token;
 		in >> token;
 		if(token == "Input")
@@ -29,6 +30,8 @@ namespace BNN {
 			return TConv::load(in);
 		else if(token == "Dropout")
 			return Dropout::load(in);
+		else if(token == "PixShuf")
+			return PixShuf::load(in);
 		else if(token == "Dense")
 			return Dense::load(in);
 		else return nullptr;

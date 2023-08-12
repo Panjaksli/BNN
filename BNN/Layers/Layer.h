@@ -3,7 +3,7 @@
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {
-		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout
+		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf
 	};
 	class Layer {
 	public:
@@ -40,7 +40,7 @@ namespace BNN {
 		virtual Tensor* get_w() { return nullptr; }
 		virtual Tensor* get_b() { return nullptr; }
 		//dims of prev layer output
-		dim1<3> pdims() const { return prev ? prev->odims() :dim1<3>{0, 0, 0}; }
+		dim1<3> pdims() const { return prev ? prev->odims() : dim1<3>{ 0, 0, 0 }; }
 		idx pdim(idx i) const { return pdims()[i]; }
 		idx psize() const { return prev ? prev->osize() : 0; }
 		//real dims of layer inputs
@@ -52,11 +52,11 @@ namespace BNN {
 		idx odim(idx i) const { return odims()[i]; }
 		idx osize()const { return product(odims()); }
 		//dims of w and b if applicable
-		virtual dim1<3> wdims() const { return dim1<3>{ 0,0,0 }; }
-		virtual dim1<3> bdims() const { return dim1<3>{ 0,0,0 }; }
+		virtual dim1<3> wdims() const { return dim1<3>{ 0, 0, 0 }; }
+		virtual dim1<3> bdims() const { return dim1<3>{ 0, 0, 0 }; }
 		idx wdim(idx i) const { return wdims()[i]; }
 		idx bdim(idx i) const { return bdims()[i]; }
-		bool trainable() const { return type() == t_Conv || type() == t_TConv || type() == t_Dense;}
+		bool trainable() const { return type() == t_Conv || type() == t_TConv || type() == t_Dense; }
 		virtual void save(std::ostream& os) const {}
 		virtual void print() const {}
 		bool compile(Layer* pnode, Layer* nnode) {

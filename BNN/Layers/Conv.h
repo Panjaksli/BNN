@@ -5,14 +5,14 @@ namespace BNN {
 	public:
 		Conv() {}
 		Conv(shp3 din, idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev = nullptr, bool bias = true, Afun af = Afun::t_lrelu) :
-			Layer({ nch,c_dim(din[1],ks[0],st[0],pa[0]),c_dim(din[2],ks[1],st[1],pa[1]) }, prev),
-			dz(odims()), b(bias ? dim1<3>{1, odim(1), odim(2)} : dim1<3>{ 0,0,0 }), w(din[0] * nch, ks[0], ks[1]),
+			Layer({ nch, c_dim(din[1],ks[0],st[0],pa[0]), c_dim(din[2],ks[1],st[1],pa[1]) }, prev),
+			dz(odims()), b(bias ? dim1<3>{nch, 1, 1} : dim1<3>{ 0,0,0 }), w(din[0] * nch, ks[0], ks[1]),
 			din(din), ks(ks), st(st), pa(pa), af(af), bias(bias) {
 			_init();
 		}
 		Conv(idx nch, shp2 ks, shp2 st, shp2 pa, Layer* prev, bool bias = true, Afun af = Afun::t_lrelu) :
-			Layer({ nch,c_dim(prev->odim(1),ks[0],st[0],pa[0]),c_dim(prev->odim(2),ks[1],st[1],pa[1]) }, prev),
-			dz(odims()), b(bias ? dim1<3>{1, odim(1), odim(2)} : dim1<3>{ 0,0,0 }), w(pdim(0)* nch, ks[0], ks[1]),
+			Layer({ nch, c_dim(prev->odim(1),ks[0],st[0],pa[0]), c_dim(prev->odim(2),ks[1],st[1],pa[1]) }, prev),
+			dz(odims()), b(bias ? dim1<3>{nch, 1, 1} : dim1<3>{ 0,0,0 }), w(pdim(0)* nch, ks[0], ks[1]),
 			din(pdims()), ks(ks), st(st), pa(pa), af(af), bias(bias) {
 			_init();
 		}
@@ -21,15 +21,15 @@ namespace BNN {
 			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(ptrain) convolve({ x(),din }, dy, wr, 1, ks - pa - 1);
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(bias)db += dz.sum(dim1<1>{0}).reshape(b.dimensions()) * inv_n;
-			dw += iconv(x().reshape(din), dy, 1, pa) * inv_n;
-			if(ptrain) conv_r(x().reshape(din), dy, wr, 1, ks - pa - 1);
+			if(bias)db += dz.sum(dim1<2>{1,2}).reshape(b.dimensions())* inv_n;
+			dw += aconv(x().reshape(din), dy, 1, pa) * inv_n;
+			if(ptrain) convolve({ x(),din }, dy, wr, 1, ks - pa - 1);
 		}
 
 		void print()const override {
@@ -67,24 +67,24 @@ namespace BNN {
 			w = w.random() * 0.5f - 0.25f;
 		}
 		Tensor compute(const Tensor& x) const override {
-			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{odim(0), 1, 1})).unaryExpr(af.fx()));
+			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
 			else return next->compute(conv(x.reshape(din), w, st, pa).unaryExpr(af.fx()));
 		}
 		Tensor comp_dyn(const Tensor& x) const override {
 			if(bias) return next->comp_dyn((conv(x, w, st, pa)
-				+ b.broadcast(dim1<3>{odim(0), c_dim(x.dimension(1), ks[0], st[0], pa[0]) / y().dimension(1),
-					c_dim(x.dimension(2), ks[1], st[1], pa[1]) / y().dimension(2)})).unaryExpr(af.fx()));
+				+ b.broadcast(dim1<3>{1, c_dim(x.dimension(1), ks[0], st[0], pa[0]),
+				c_dim(x.dimension(2), ks[1], st[1], pa[1])})).unaryExpr(af.fx()));
 			else return next->comp_dyn(conv(x, w, st, pa).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
-			conv_r(dz, x().reshape(din), w, st, pa);
-			if(bias)dz = dz + b.broadcast(dim1<3>{odim(0), 1, 1});
+			convolve(dz, x().reshape(din), w, st, pa);
+			if(bias)dz = dz + b.broadcast(dim1<3>{1, odim(1), odim(2)});
 			y() = dz.unaryExpr(af.fx());
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
-			conv_r(dz, x.reshape(din), w, st, pa);
-			if(bias)dz = dz + b.broadcast(dim1<3>{odim(0), 1, 1});
+			convolve(dz, x.reshape(din), w, st, pa);
+			if(bias)dz = dz + b.broadcast(dim1<3>{1, odim(1), odim(2)});
 			return next->predict(y() = dz.unaryExpr(af.fx()));
 		}
 		Tensor dz, b, w;

@@ -95,5 +95,11 @@
     <ClInclude Include="Layers\OutShuf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Misc\Drafts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Layers\PixShuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
