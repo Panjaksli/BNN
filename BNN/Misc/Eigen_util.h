@@ -6,7 +6,7 @@ namespace BNN {
 	using Eigen::TensorBase;
 	using Tensor = Eigen::Tensor<float, 3, 0, int>;
 	using Tenarr = Eigen::Tensor<float, 4, 0, int>;
-	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>,0,int>;
+	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>, 0, int>;
 	using idx = int;
 	template <size_t N>
 	using dim1 = Eigen::DSizes<idx, N>;
@@ -85,10 +85,10 @@ namespace BNN {
 				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 						tmp = 0;
-						int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-						int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-						for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-							for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+						int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+						int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+						for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+							for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 								tmp += a(0, j + m, i + l) * b(0, m, l);
 							}
 						}
@@ -102,10 +102,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < och; k++) {
 								tmp[k] += a(0, j + m, i + l) * b(k, m, l);
 							}
@@ -120,10 +120,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					tmp = 0;
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx n = 0; n < ich; n++) {
 								tmp += a(n, j + m, i + l) * b(n, m, l);
 							}
@@ -138,10 +138,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < och; k++) {
 								for(idx n = 0; n < ich; n++) {
 									tmp[k] += a(n, j + m, i + l) * b(k * ich + n, m, l);
@@ -168,10 +168,10 @@ namespace BNN {
 				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 						tmp = 0;
-						int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-						int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-						for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-							for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+						int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+						int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+						for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+							for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 								tmp += a(0, j + m, i + l) * b(0, m, l);
 							}
 						}
@@ -185,10 +185,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < bch; k++) {
 								tmp[k] += a(0, j + m, i + l) * b(k, m, l);
 							}
@@ -203,10 +203,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx n = 0; n < ach; n++) {
 								tmp[n] += a(n, j + m, i + l) * b(0, m, l);
 							}
@@ -221,10 +221,10 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
-					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
-						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
+					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
+						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < bch; k++) {
 								for(idx n = 0; n < ach; n++) {
 									tmp[k * ach + n] += a(n, j + m, i + l) * b(k, m, l);

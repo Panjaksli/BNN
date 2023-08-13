@@ -59,8 +59,8 @@ namespace BNN {
 		dim1<3> idims() const override { return din; }
 	private:
 		void _init() {
-			if(bias)b = b.random() * 0.5f - 0.25f;
-			w = w.random() * 0.5f - 0.25f;
+			if(bias)b = b.random() - 0.5f;
+			w = w.random() - 0.5f;
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
