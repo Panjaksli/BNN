@@ -84,67 +84,93 @@ namespace BNN {
 		return compiled = true;
 	}
 
-	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr, float rate, int epochs, int nlog) {
+	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, idx nthr, float rate, idx epochs, idx nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
 		if(x0.dimension(0) < nthr) nthr = x0.dimension(0);
-		float mult = 1.f / nthr;
-		int step = x0.dimension(0) / nthr;
+		double t = timer();
 		bool result = 1;
+		float cost = 0;
+		float mult = 1.f / nthr;
+		idx step = x0.dimension(0) / nthr;
 		vector<NNet> nets(nthr, *this);
 		dim1<4> dx{ step, x0.dimension(1), x0.dimension(2), x0.dimension(3) };
 		dim1<4> dy{ step, y0.dimension(1), y0.dimension(2), y0.dimension(3) };
+		vector<int> indices = shuffled(x0.dimension(0));
+		Tenarr x(x0.dimensions());
+		Tenarr y(y0.dimensions());
+		for(idx i = 0; i < indices.size(); i++) {
+			x.chip(i, 0) = x0.chip(indices[i], 0);
+			y.chip(i, 0) = y0.chip(indices[i], 0);
+		}
 #pragma omp parallel for
-		for(int i = 0; i < nthr; i++) {
+		for(idx i = 0; i < nthr; i++) {
 			dim1<4> o{ i * step, 0, 0, 0 };
-			bool res = nets[i].train_job(x0.slice(o, dx), y0.slice(o, dy), epochs, nlog, i == 0);
+			float cst = nets[i].train_job(x.slice(o, dx), y.slice(o, dy), epochs, nlog, i, i == 0);
+			bool res = cst >= 0;
 #pragma omp atomic
 			result &= res;
+#pragma omp atomic
+			cost += cst;
 		}
-		if(!result) return false;
+		if(!result) {
+			println("Failed training the network !!!");
+			return false;
+		}
 		NNet net(*this);
 		net.Zero();
 		for(const auto& n : nets) {
-			for(int i = 0; i < net.graph.size(); i++) {
-				if(net.graph[i]->get_b()) *net.graph[i]->get_b() += mult * *n.graph[i]->get_b();
-				if(net.graph[i]->get_w()) *net.graph[i]->get_w() += mult * *n.graph[i]->get_w();
+			for(idx i = 1; i < net.graph.size() - 1; i++) {
+				if(net.graph[i]->get_b()) *net.graph[i]->get_b() += mult * (*n.graph[i]->get_b());
+				if(net.graph[i]->get_w()) *net.graph[i]->get_w() += mult * (*n.graph[i]->get_w());
 			}
 		}
+		println("Trained Network:", name, "Cost:", cost * mult, "Time:", timer(t));
 		*this = net;
 		return true;
 	}
-	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, float rate, int epochs, int nlog) {
+	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, float rate, idx epochs, idx nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		return train_job(x0, y0, epochs, nlog);
+		double t = timer();
+		float cost = train_job(x0, y0, epochs, nlog);
+		if(cost < 0) {
+			println("Failed training the network !!!");
+			return false;
+		}
+			println("Trained Network:", name, "Cost:", cost, "Time:", timer(t));
+			return true;
 	}
 
-	bool NNet::train_job(const Tenarr& x0, const Tenarr& y0, int epochs, int nlog, bool log) {
+	float NNet::train_job(const Tenarr& x0, const Tenarr& y0, idx epochs, idx nlog, idx index, bool log) {
 		optimizer->inv_n = 1.f / x0.dimension(0);
 		optimizer->reset_all();
 		float min_cost = 1e6f;
 		double t = timer();
 		double dt = timer();
-		int log_step = epochs / nlog;
+		idx log_step = epochs / nlog;
+		idx max_epochs = 3 * epochs / 2;
 		log_step = max(1, log_step);
-		for(int i = 1; i <= epochs; i++) {
-			float cost = 0;
-			for(int j = 0; j < x0.dimension(0); j++) {
+		float cost = 0;
+		for(idx i = 1; i <= epochs; i++) {
+			cost = 0;
+			for(idx j = 0; j < x0.dimension(0); j++) {
 				graph.front()->predict(x0.chip(j, 0));
 				cost += graph.back()->error(y0.chip(j, 0));
 				optimizer->get_grad();
 			}
 			cost *= optimizer->inv_n;
-			if(cost > 1e3f) { println("Error:  Failed training !!!"); return false; }
-			min_cost = min(cost, min_cost);
+			if(cost > 1e3f) { return -1; }
+			min_cost = fminf(cost, min_cost);
 			optimizer->update_grad();
 			if(log && i % log_step == 0) {
-				printr("Epoch:", i, "Cost:", cost, "Min Cost:", min_cost, "Step:", timer(dt) / log_step, "Time:", timer(t));
+				printr("ID:", index, "Epoch:", i, "Cost:", cost, "Min:", min_cost, "Step:", timer(dt) / log_step, "Time:", timer(t));
 				dt = timer();
 			}
+			if(i >= max_epochs) break;
+			else if(i == epochs && cost > min_cost) epochs++;
 		}
-		if(log) println("Message:  Trained Network:", name, "Min Cost:", min_cost, "Total Time:", timer(t));
-		return true;
+		return cost;
 	}
 	void NNet::Save(const std::string& folder) const {
 		create_directories(folder);
@@ -187,11 +213,16 @@ namespace BNN {
 		Tensor y = Compute(x);
 		Image(y).save(name + "/0.png");
 	}
+	void NNet::Save_image_DS(const Tensor& x) const {
+		create_directories(name);
+		Tensor y = Compute_DS(x);
+		Image(y).save(name + "/0.png");
+	}
 	void NNet::Save_images(const Tenarr& x) const {
 		create_directories(name);
 		Tenarr y = Compute_batch(x);
-		for(int i = 0; i < y.dimension(0); i++)
-			Image(y.chip(i, 0)).save(name + "/" + std::to_string(i + 1) + ".png");
+		for(idx i = 0; i < y.dimension(0); i++)
+			Image(y.chip(i, 0)).save(name + "/" + std::to_string(i) + ".png");
 	}
 	void NNet::Clear() {
 		compiled = false;

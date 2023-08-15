@@ -44,7 +44,7 @@ namespace BNN {
 			next->save(out);
 		}
 		static auto load(std::istream& in) {
-			shp3 d; shp2 k, s, p; idx n; int af; bool b;
+			shp3 d; shp2 k, s, p; idx n; idx af; bool b;
 			in >> d[0] >> d[1] >> d[2] >> n >> k[0]
 				>> k[1] >> s[0] >> s[1] >> p[0] >> p[1] >> b >> af; in.ignore(1, '\n');
 			auto tmp = new TConv(d, n, k, s, p, nullptr, b, Afun::Type(af));
@@ -59,18 +59,18 @@ namespace BNN {
 		dim1<3> idims() const override { return din; }
 	private:
 		void _init() {
-			if(bias)b = b.random() - 0.5f;
-			w = w.random() - 0.5f;
+			if(bias)b = b.random() * 0.2f - 0.1f;
+			w = w.random() * 0.2f - 0.1f;
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
 			else return next->compute((conv(x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1)).unaryExpr(af.fx()));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
-			if(bias) return next->comp_dyn((conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1)
+		Tensor compute_ds(const Tensor& x) const override {
+			if(bias) return next->compute_ds((conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1)
 				+ b.broadcast(dim1<3>{1, t_dim(x.dimension(1), ks[0], st[0], pa[0]),
 				t_dim(x.dimension(2), ks[1], st[1], pa[1])})).unaryExpr(af.fx()));
-			else return next->comp_dyn(conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1).unaryExpr(af.fx()));
+			else return next->compute_ds(conv(x.inflate(dim1<3>{ 1, st[0], st[1] }), w, 1, ks - pa - 1).unaryExpr(af.fx()));
 		}
 		const Tensor& predict(const Tensor& x) override {
 			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });

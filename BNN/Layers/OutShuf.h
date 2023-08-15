@@ -5,9 +5,9 @@ namespace BNN {
 	class OutShuf : public Layer {
 	public:
 		OutShuf() {}
-		OutShuf(shp3 d, int r = 1, Layer* prev = nullptr, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) :
+		OutShuf(shp3 d, idx r = 1, Layer* prev = nullptr, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) :
 			Layer({ d[0] / (r * r),r * d[1],r * d[2] }, prev), ef(ef), af(af), r(r) {}
-		OutShuf(Layer* prev, int r = 1, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) :
+		OutShuf(Layer* prev, idx r = 1, Afun af = Afun::t_lin, Efun ef = Efun::t_mse) :
 			Layer({ prev->odim(0) / (r * r),r * prev->odim(1),r * prev->odim(2) }, prev), ef(ef), af(af), r(r) {}
 		const Tensor& output() const { return y(); }
 		void derivative(bool ptrain) override {
@@ -32,7 +32,7 @@ namespace BNN {
 		}
 		dim1<3> idims() const override { return dim1<3>{odim(0)* r* r, odim(1) / r, odim(2) / r}; }
 		static auto load(std::istream& in) {
-			shp3 d; int af; int ef; int r;
+			shp3 d; idx af; idx ef; idx r;
 			in >> d[0] >> d[1] >> d[2] >> af >> ef >> r;
 			return new OutShuf(d, r, nullptr, (Afun::Type)af, (Efun::Type)ef);
 		}
@@ -45,10 +45,10 @@ namespace BNN {
 				.reshape(odims())
 				.unaryExpr(af.fx());
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
+		Tensor compute_ds(const Tensor& x) const override {
 			return x.reshape(dim1<5>{x.dimension(0) / (r * r), r, r, x.dimension(1), x.dimension(2)})
 				.shuffle(dim1<5>{0, 2, 3, 1, 4})
-				.reshape(odims())
+				.reshape(dim1<3>{x.dimension(0) / (r * r), r* x.dimension(1), r* x.dimension(2)})
 				.unaryExpr(af.fx());
 		}
 		const Tensor& predict(const Tensor& x) override {
@@ -65,6 +65,6 @@ namespace BNN {
 		}
 		Efun ef;
 		Afun af;
-		int r = 2;
+		idx r = 2;
 	};
 }

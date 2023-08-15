@@ -32,7 +32,7 @@ namespace BNN {
 			//We should skip the dropout during normal computation !
 			return next->compute(x);
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
+		Tensor compute_ds(const Tensor& x) const override {
 			return next->compute(x);
 		}
 		const Tensor& predict() override {

@@ -13,8 +13,8 @@ namespace BNN {
 		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
-		bool Train_single(const Tenarr& x0, const Tenarr& y0, float rate = 0, int epochs = 1000, int nlog = 100);
-		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, int nthr = 16, float rate = 0, int epochs = 1000, int nlog = 100);
+		bool Train_single(const Tenarr& x0, const Tenarr& y0, float rate = 0, idx epochs = 1000, idx nlog = 100);
+		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx nthr = 16, float rate = 0, idx epochs = 1000, idx nlog = 100);
 		void Clear();
 		void Print() const;
 		dim1<3> In_dims()const { return graph.front()->idims(); }
@@ -44,12 +44,17 @@ namespace BNN {
 			}
 			return y;
 		}
+		//compute but agnostic to the input size (mostly), dont use with dense layers!!!!!!!!!!!!!!!!
+		Tensor Compute_DS(const Tensor& x) const {
+			return graph.front()->compute_ds(x);
+		}
 		NNet& Append(const NNet& other);
 		void Save(const std::string& name) const;
 		void Save() const;
 		bool Load(const std::string& name);
 		bool Load();
 		void Save_image(const Tensor& x) const;
+		void Save_image_DS(const Tensor& x) const;
 		void Save_images(const Tenarr& x) const;
 		void Init() {
 			for(auto& g : graph) {
@@ -69,7 +74,7 @@ namespace BNN {
 			return graph.size() >= 2 && graph.front()->type() == t_Input && (graph.back()->type() == t_Output || graph.back()->type() == t_OutShuf);
 		}
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
-		bool train_job(const Tenarr& x0, const Tenarr& y0, int epochs = 1000, int nlog = 100, bool log = 1);
+		float train_job(const Tenarr& x0, const Tenarr& y0, idx epochs = 1000, idx nlog = 100, idx index = 0,bool log = 1);
 		vector<Layer*> graph;
 		Optimizer* optimizer = nullptr;
 		std::string name = "Net";

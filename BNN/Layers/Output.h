@@ -24,7 +24,7 @@ namespace BNN {
 			out << "Hidden Output" SPC odim(0) SPC odim(1) SPC odim(2) SPC af.type SPC ef.type << "\n";
 		}
 		static auto load(std::istream& in) {
-			shp3 d; int af; int ef;
+			shp3 d; idx af; idx ef;
 			in >> d[0] >> d[1] >> d[2] >> af >> ef;
 			return new Output(d, nullptr, (Afun::Type)af, (Efun::Type)ef);
 		}
@@ -34,7 +34,7 @@ namespace BNN {
 		Tensor compute(const Tensor& x) const override {
 			return x.reshape(odims()).unaryExpr(af.fx());
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
+		Tensor compute_ds(const Tensor& x) const override {
 			return x.unaryExpr(af.fx());
 		}
 		const Tensor& predict(const Tensor& x) override { return y() = x.reshape(odims()).unaryExpr(af.fx()); }

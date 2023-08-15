@@ -10,9 +10,9 @@ namespace BNN {
 	Tensor Image::tensor() const {
 		//pad to multiple of 2
 		Tensor res(n, h + h % 2, w + w % 2);
-		for(int j = 0; j < w; j++) {
-			for(int i = 0; i < h; i++) {
-				for(int k = 0; k < n; k++) {
+		for(idx j = 0; j < w; j++) {
+			for(idx i = 0; i < h; i++) {
+				for(idx k = 0; k < n; k++) {
 					res(k, i, j) = operator()(i, j, k) / 255.f;
 				}
 			}
@@ -21,16 +21,16 @@ namespace BNN {
 	}
 	Image::Image(const Tensor& in) : data((uchar*)malloc(product(in.dimensions()))), w(in.dimension(2)), h(in.dimension(1)), n(in.dimension(0)) {
 		Tensor tmp = in.clip(0.f, 1.f) * 255.f + 0.5f;
-		for(int j = 0; j < w; j++) {
-			for(int i = 0; i < h; i++) {
-				for(int k = 0; k < n; k++) {
+		for(idx j = 0; j < w; j++) {
+			for(idx i = 0; i < h; i++) {
+				for(idx k = 0; k < n; k++) {
 					operator()(i, j, k) = tmp(k, i, j);
 				}
 			}
 		}
 	}
-	bool Image::load(const std::string& name, std::string& rename, int nch) {
-		int tw, th, tn;
+	bool Image::load(const std::string& name, std::string& rename, idx nch) {
+		idx tw, th, tn;
 		uchar* tmp = stbi_load(name.c_str(), &tw, &th, &tn, nch);
 		if(tmp) {
 			rename = name;
@@ -42,7 +42,22 @@ namespace BNN {
 		}
 		return false;
 	}
-	bool Image::save(const std::string& name) {
+	void Image::rotate() {
+		Image tmp = *this;
+		std::swap(tmp.w, tmp.h);
+		for(idx i = 0; i < h; i++) {
+			for(idx j = 0; j < w; j++) {
+				for(idx k = 0; k < n; k++) {
+					tmp(j, i, k) = operator()(i, j, k);
+				}
+			}
+		}
+		swap(*this, tmp);
+	}
+	bool Image::save(const std::string& name) const {
 		return stbi_write_png(name.c_str(), w, h, n, data, w * n);
+	}
+	bool Image::save_even(const std::string& name) const {
+		return stbi_write_png(name.c_str(), w - w % 2, h - h % 2, n, data, w * n);
 	}
 }

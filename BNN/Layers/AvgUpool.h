@@ -46,9 +46,9 @@ namespace BNN {
 			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
 			return next->compute(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
+		Tensor compute_ds(const Tensor& x) const override {
 			auto ix = x.inflate(dim1<3>{ 1, st[0], st[1] });
-			return next->comp_dyn(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
+			return next->compute_ds(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
 		}
 		const Tensor& predict() override {
 			w.setConstant(float(st[0] * st[1]) / w.size());

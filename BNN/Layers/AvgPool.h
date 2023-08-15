@@ -47,8 +47,8 @@ namespace BNN {
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(aconv(x.reshape(din), w.constant(1.f / w.size()), st, pa));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
-			return next->comp_dyn(aconv(x, w.constant(1.f / w.size()), st, pa));
+		Tensor compute_ds(const Tensor& x) const override {
+			return next->compute_ds(aconv(x, w.constant(1.f / w.size()), st, pa));
 		}
 		const Tensor& predict() override {
 			w.setConstant(1.f / w.size());

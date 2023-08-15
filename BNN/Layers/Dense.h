@@ -32,7 +32,7 @@ namespace BNN {
 			next->save(out);
 		}
 		static auto load(std::istream& in) {
-			shp2 d(1, 1); int af;
+			shp2 d(1, 1); idx af;
 			in >> d[0] >> d[1] >> af; in.ignore(1, '\n');
 			auto tmp = new Dense({ d[0],d[1] }, nullptr, (Afun::Type)af);
 			in.read((char*)tmp->get_w()->data(), tmp->w.size() * 4);
@@ -48,14 +48,15 @@ namespace BNN {
 		LType type() const override { return t_Dense; }
 	private:
 		void _init() {
-			b = b.random() - 0.5f;
-			w = w.random() - 0.5f;
+			b = b.random() * 0.2f - 0.1f;
+			w = w.random() * 0.2f - 0.1f;
 		}
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(fma(w, x.reshape(dim1<3>{ 1, wdim(2), 1 }), b).unaryExpr(af.fx()));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
-			return next->comp_dyn(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x, b).unaryExpr(af.fx()));
+		//this function exists, but should not be used... 
+		Tensor compute_ds(const Tensor& x) const override {
+			return next->compute_ds(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x.reshape(dim1<3>{1, x.size(), 1}), b).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
 			fma_r(dz, w, x().reshape(dim1<3>{ 1, wdim(2), 1 }), b);

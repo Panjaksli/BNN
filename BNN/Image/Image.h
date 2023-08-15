@@ -4,13 +4,15 @@ namespace BNN {
 	class Image {
 	public:
 		Image() {}
-		Image(const std::string& name, int nch) {
+		Image(const std::string& name, idx nch, bool landscape = 0) {
 			std::string rename;
 			if(load(name, rename, nch) || load(name + ".png", rename, nch) || load(name + ".jpg", rename, nch)
 				|| load(name + ".jpeg", rename, nch) || load(name + ".gif", rename, nch) || load(name + ".hdr", rename, nch)
 				|| load(name + ".bmp", rename, nch) || load(name + ".tga", rename, nch) || load(name + ".pic", rename, nch)
 				|| load(name + ".ppm", rename, nch) || load(name + ".pgm", rename, nch) || load(name + ".psd", rename, nch)) {
+				if(landscape && h > w) rotate();
 				println("Loaded image:", rename, "D H W:", n, h, w); return;
+
 			}
 			else println("Image was not found:", name);
 		}
@@ -18,19 +20,20 @@ namespace BNN {
 		Tensor tensor() const;
 		Image(const Tensor& in);
 		Image(const Image& cpy) : data((uchar*)malloc(cpy.size())), w(cpy.w), h(cpy.h), n(cpy.n) {
-			for(int i = 0; i < w * h * n; i++)
+			for(idx i = 0; i < w * h * n; i++)
 				data[i] = cpy.data[i];
 		}
 		const Image& operator=(Image cpy) {
 			swap(*this, cpy);
 			return *this;
 		}
+		void rotate();
 		//h w d
-		inline const uchar& operator()(int i, int j, int k) const {
+		inline const uchar& operator()(idx i, idx j, idx k) const {
 			return data[(i * w + j) * n + k];
 		}
 		//h w d
-		inline uchar& operator()(int i, int j, int k) {
+		inline uchar& operator()(idx i, idx j, idx k) {
 			return data[(i * w + j) * n + k];
 		}
 		inline idx size()const {
@@ -48,9 +51,10 @@ namespace BNN {
 			std::swap(i1.h, i2.h);
 			std::swap(i1.n, i2.n);
 		}
-		bool load(const std::string& name, std::string& rename, int nch);
-		bool save(const std::string& name);
+		bool load(const std::string& name, std::string& rename, idx nch);
+		bool save(const std::string& name) const;
+		bool save_even(const std::string& name) const;
 		uchar* data = nullptr;
-		int w = 0, h = 0, n = 0;
+		idx w = 0, h = 0, n = 0;
 	};
 }

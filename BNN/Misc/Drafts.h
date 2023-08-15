@@ -78,8 +78,8 @@ inline void conv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa)
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					tmp = 0;
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 							tmp += a(0, j + m, i + l) * b(0, m, l);
@@ -95,8 +95,8 @@ inline void conv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa)
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				std::fill(tmp, tmp + och, 0);
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx k = 0; k < och; k++) {
@@ -113,8 +113,8 @@ inline void conv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa)
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				tmp = 0;
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx n = 0; n < ich; n++) {
@@ -131,8 +131,8 @@ inline void conv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa)
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				std::fill(tmp, tmp + och, 0);
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx k = 0; k < och; k++) {
@@ -162,8 +162,8 @@ inline void aconv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					tmp = 0;
-					int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-					int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+					idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+					idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 					for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 						for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 							tmp += a(0, j + m, i + l) * b(0, m, l);
@@ -179,8 +179,8 @@ inline void aconv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				std::fill(tmp, tmp + och, 0);
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx k = 0; k < bch; k++) {
@@ -197,8 +197,8 @@ inline void aconv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				std::fill(tmp, tmp + och, 0);
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx n = 0; n < ach; n++) {
@@ -215,8 +215,8 @@ inline void aconv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa
 		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 				std::fill(tmp, tmp + och, 0);
-				int clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
-				int clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
+				idx clip_l = (i + b.dimension(2) > a.dimension(2)) * (i + b.dimension(2) - a.dimension(2));
+				idx clip_m = (j + b.dimension(1) > a.dimension(1)) * (j + b.dimension(1) - a.dimension(1));
 				for(idx l = i < 0 ? -i : 0; l < b.dimension(2) - clip_l; l++) {
 					for(idx m = j < 0 ? -j : 0; m < b.dimension(1) - clip_m; m++) {
 						for(idx k = 0; k < bch; k++) {
@@ -232,7 +232,7 @@ inline void aconv3(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa
 	}
 }
 
-int main() {
+idx main() {
 	idx i = 2000;
 	idx k = 5;
 	idx s = 1;
@@ -245,7 +245,7 @@ int main() {
 	Tensor y2(n, c_dim(i, k, s, p), c_dim(i, k, s, p));
 	Tensor y3(n, c_dim(i, k, s, p), c_dim(i, k, s, p));
 	double t; double t1 = 0, t2 = 0, t3 = 0;
-	for(int i = 0; i < 1; i++) {
+	for(idx i = 0; i < 1; i++) {
 		t = timer();
 		conv1(y1, x, w, s, p);
 		t1 += timer(t);

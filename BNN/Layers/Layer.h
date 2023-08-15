@@ -19,7 +19,7 @@ namespace BNN {
 		//thread safe but slower
 		virtual Tensor compute(const Tensor& x) const = 0;
 		//compute result agnostic to the size of underlying nodes
-		virtual Tensor comp_dyn(const Tensor& x) const = 0;
+		virtual Tensor compute_ds(const Tensor& x) const = 0;
 		virtual float error(const Tensor& y0) { return 1e6f; }
 		//not thread safe but faster
 		virtual const Tensor& predict() = 0;

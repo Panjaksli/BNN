@@ -12,8 +12,8 @@ namespace BNN {
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(x.reshape(odims()));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
-			return next->comp_dyn(x);
+		Tensor compute_ds(const Tensor& x) const override {
+			return next->compute_ds(x);
 		}
 		const Tensor& predict(const Tensor& x) override {
 			input(x);

@@ -19,7 +19,7 @@ void compile(Layer* first) override {\
 	build(first);\
 };\
 void get_grad() override { \
-	for (int i = 0 ; i < nodes.size(); i++) {\
+	for (idx i = 0 ; i < nodes.size(); i++) {\
 		nodes[i].get_grad(i < nodes.size() - 1, inv_n);\
 	}\
 };\

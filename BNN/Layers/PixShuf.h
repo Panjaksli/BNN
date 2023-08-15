@@ -5,9 +5,9 @@ namespace BNN {
 	class PixShuf : public Layer {
 	public:
 		PixShuf() {}
-		PixShuf(shp3 d, int r = 1, Layer* prev = nullptr) :
+		PixShuf(shp3 d, idx r = 1, Layer* prev = nullptr) :
 			Layer({ d[0] / (r * r),r * d[1],r * d[2] }, prev), r(r) {}
-		PixShuf(Layer* prev, int r = 1) :
+		PixShuf(Layer* prev, idx r = 1) :
 			Layer({ prev->odim(0) / (r * r),r * prev->odim(1),r * prev->odim(2) }, prev), r(r) {}
 		const Tensor& output() const { return y(); }
 		void derivative(bool ptrain) override {
@@ -25,7 +25,7 @@ namespace BNN {
 		}
 		dim1<3> idims() const override { return dim1<3>{odim(0)* r* r, odim(1) / r, odim(2) / r}; }
 		static auto load(std::istream& in) {
-			shp3 d; int r;
+			shp3 d; idx r;
 			in >> d[0] >> d[1] >> d[2] >> r;
 			return new PixShuf(d, r, nullptr);
 		}
@@ -37,8 +37,8 @@ namespace BNN {
 				.shuffle(dim1<5>{0, 2, 3, 1, 4})
 				.reshape(odims()));
 		}
-		Tensor comp_dyn(const Tensor& x) const override {
-			return next->comp_dyn(x.reshape(dim1<5>{x.dimension(0) / (r * r), r, r, x.dimension(1), x.dimension(2)})
+		Tensor compute_ds(const Tensor& x) const override {
+			return next->compute_ds(x.reshape(dim1<5>{x.dimension(0) / (r * r), r, r, x.dimension(1), x.dimension(2)})
 				.shuffle(dim1<5>{0, 2, 3, 1, 4})
 				.reshape(odims()));
 		}
@@ -54,6 +54,6 @@ namespace BNN {
 				.reshape(odims());
 			return next->predict();
 		}
-		int r = 2;
+		idx r = 2;
 	};
 }

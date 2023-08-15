@@ -3,11 +3,14 @@
 #include "Misc.h"
 
 namespace BNN {
+	using idx = int_fast32_t;
 	using Eigen::TensorBase;
-	using Tensor = Eigen::Tensor<float, 3, 0, int>;
-	using Tenarr = Eigen::Tensor<float, 4, 0, int>;
-	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>, 0, int>;
-	using idx = int;
+	using Eigen::TensorRef;
+
+	using Tensor = Eigen::Tensor<float, 3, 0, idx>;
+	using Tenarr = Eigen::Tensor<float, 4, 0, idx>;
+	using fsca = Eigen::TensorFixedSize<float, Eigen::Sizes<>, 0, idx>;
+	
 	template <size_t N>
 	using dim1 = Eigen::DSizes<idx, N>;
 	//using shp2 = Eigen::IndexPair<idx>;
@@ -64,15 +67,15 @@ namespace BNN {
 	}
 
 	struct Reshape {
-		Reshape(Tensor& data) : data(data), dim(data.dimensions()) {}
-		Reshape(Tensor& data, shp3 dim) : data(data), dim(dim) {}
+		Reshape(Tensor& __restrict__ data) : data(data), dim(data.dimensions()) {}
+		Reshape(Tensor& __restrict__ data, shp3 dim) : data(data), dim(dim) {}
 		const float& operator() (idx i, idx j, idx k)const { return data.data()[i + j * dim[0] + k * dim[0] * dim[1]]; }
 		float& operator() (idx i, idx j, idx k) { return data.data()[i + j * dim[0] + k * dim[0] * dim[1]]; }
 		Tensor& data;
 		dim1<3> dim;
 	};
 
-	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	inline void convolve(Reshape c, const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
 		if(ich <= 1 && och <= 1) {
@@ -85,8 +88,8 @@ namespace BNN {
 				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 						tmp = 0;
-						int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-						int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+						idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+						idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 						for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 							for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 								tmp += a(0, j + m, i + l) * b(0, m, l);
@@ -102,8 +105,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < och; k++) {
@@ -120,8 +123,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					tmp = 0;
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx n = 0; n < ich; n++) {
@@ -138,8 +141,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < och; k++) {
@@ -154,7 +157,7 @@ namespace BNN {
 			}
 		}
 	}
-	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	inline void all_convolve(Reshape c, const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
 		idx och = ach * bch;
@@ -168,8 +171,8 @@ namespace BNN {
 				for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 					for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 						tmp = 0;
-						int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-						int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+						idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+						idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 						for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 							for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 								tmp += a(0, j + m, i + l) * b(0, m, l);
@@ -185,8 +188,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < bch; k++) {
@@ -203,8 +206,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx n = 0; n < ach; n++) {
@@ -221,8 +224,8 @@ namespace BNN {
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					std::fill(tmp, tmp + och, 0);
-					int clip_l = max(0,i + b.dimension(2) - a.dimension(2));
-					int clip_m = max(0,j + b.dimension(1) - a.dimension(1));
+					idx clip_l = max(0,i + b.dimension(2) - a.dimension(2));
+					idx clip_m = max(0,j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i,0); l < b.dimension(2) - clip_l; l++) {
 						for(idx m = max(-j,0); m < b.dimension(1) - clip_m; m++) {
 							for(idx k = 0; k < bch; k++) {
@@ -240,7 +243,7 @@ namespace BNN {
 
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
 	template <class derived>
-	inline void mul_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+	inline void mul_r(const TensorBase<derived>& __restrict__ res, const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 dims = { 1, 0 }) {
 		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
 		for(idx i = 0; i < a.dimension(0); i++) {
 			for(idx j = 0; j < b.dimension(0); j++) {
@@ -250,7 +253,7 @@ namespace BNN {
 	}
 	//fma operation
 	template <class derived>
-	inline void fma_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, const Tensor& c, shp2 dims = { 1, 0 }) {
+	inline void fma_r(const TensorBase<derived>& __restrict__ res, const Tensor& __restrict__ a, const Tensor& __restrict__ b, const Tensor& __restrict__ c, shp2 dims = { 1, 0 }) {
 		auto& d = const_cast<Eigen::TensorBase<derived>&>(res);
 		for(idx i = 0; i < a.dimension(0); i++) {
 			for(idx j = 0; j < b.dimension(0); j++) {
@@ -261,7 +264,7 @@ namespace BNN {
 	}
 	//multiply all matrix combinations and accumulate as a0b0 + a0b1, a1b0 + a1b1....
 	template <class derived>
-	inline void mul_acc_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+	inline void mul_acc_r(const TensorBase<derived>& __restrict__ res, const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 dims = { 1, 0 }) {
 		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
 		c.setZero();
 		for(idx i = 0; i < a.dimension(0); i++) {
@@ -272,7 +275,7 @@ namespace BNN {
 	}
 	//convolute and accumulate filters -> b / a filters (b HAS to be multiple of a)
 
-	inline void pool_max_r(Reshape c, const Tensor& a, shp2 ker, shp2 str = 1) {
+	inline void pool_max_r(Reshape c, const Tensor& __restrict__ a, shp2 ker, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
 		idx d2 = c_dim(a.dimension(2), ker[1], str[1], 0);
@@ -288,25 +291,25 @@ namespace BNN {
 		}
 	}
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
-	inline Tensor mul(const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+	inline Tensor mul(const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 dims = { 1, 0 }) {
 		Tensor c(a.dimension(0) * b.dimension(0), dims[0] ? a.dimension(1) : a.dimension(2), dims[1] ? b.dimension(1) : b.dimension(2));
 		mul_r(c, a, b, dims);
 		return c;
 	}
 	//fma operation
-	inline Tensor fma(const Tensor& a, const Tensor& b, const Tensor& c, shp2 dims = { 1, 0 }) {
+	inline Tensor fma(const Tensor& __restrict__ a, const Tensor& __restrict__ b, const Tensor& __restrict__ c, shp2 dims = { 1, 0 }) {
 		Tensor d(c.dimensions());
 		fma_r(d, a, b, c, dims);
 		return d;
 	}
 	//multiply all matrix combinations and accumulate as a0b0 + a0b1, a1b0 + a1b1....
-	inline Tensor mul_acc(const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+	inline Tensor mul_acc(const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 dims = { 1, 0 }) {
 		Tensor c(a.dimension(0), dims[0] ? a.dimension(1) : a.dimension(2), dims[1] ? b.dimension(1) : b.dimension(2));
 		mul_acc_r(c, a, b, dims);
 		return c;
 	}
 
-	inline Tensor aconv(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
+	inline Tensor aconv(const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 str = 1, shp2 pad = 0) {
 		idx d0 = b.dimension(0) * a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
 		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
@@ -315,7 +318,7 @@ namespace BNN {
 		return c;
 	}
 
-	inline Tensor conv(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
+	inline Tensor conv(const Tensor& __restrict__ a, const Tensor& __restrict__ b, shp2 str = 1, shp2 pad = 0) {
 		idx d0 = b.dimension(0) / a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
 		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
@@ -324,7 +327,7 @@ namespace BNN {
 		return c;
 	}
 
-	inline Tensor pool_max(const Tensor& a, shp2 ker = 2, shp2 str = 1) {
+	inline Tensor pool_max(const Tensor& __restrict__ a, shp2 ker = 2, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
 		idx d2 = c_dim(a.dimension(2), ker[1], str[1], 0);
