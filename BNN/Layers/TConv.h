@@ -25,7 +25,7 @@ namespace BNN {
 			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			auto dx = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
 			if(bias)db += dz.sum(dim1<2>{1,2}).reshape(b.dimensions()) * inv_n;
-			dw += aconv(dx, dz, 1, ks - pa - 1) * inv_n;
+			acc_convolve(dw, dx, dz, 1, ks - pa - 1, inv_n);
 			if(ptrain) convolve({ x(),din }, dz, wr, st, pa);
 		}
 		void print()const override {

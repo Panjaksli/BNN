@@ -13,8 +13,8 @@ namespace BNN {
 		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
-		bool Train_single(const Tenarr& x0, const Tenarr& y0, float rate = 0, idx epochs = 1000, idx nlog = 100);
-		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx nthr = 16, float rate = 0, idx epochs = 1000, idx nlog = 100);
+		bool Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1,  idx batch = -1, idx nlog = -1);
+		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16);
 		void Clear();
 		void Print() const;
 		dim1<3> In_dims()const { return graph.front()->idims(); }

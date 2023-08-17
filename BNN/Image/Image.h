@@ -4,14 +4,14 @@ namespace BNN {
 	class Image {
 	public:
 		Image() {}
-		Image(const std::string& name, idx nch, bool landscape = 0) {
+		Image(const std::string& name, idx nch, bool print = 0, bool landscape = 0) {
 			std::string rename;
 			if(load(name, rename, nch) || load(name + ".png", rename, nch) || load(name + ".jpg", rename, nch)
 				|| load(name + ".jpeg", rename, nch) || load(name + ".gif", rename, nch) || load(name + ".hdr", rename, nch)
 				|| load(name + ".bmp", rename, nch) || load(name + ".tga", rename, nch) || load(name + ".pic", rename, nch)
 				|| load(name + ".ppm", rename, nch) || load(name + ".pgm", rename, nch) || load(name + ".psd", rename, nch)) {
 				if(landscape && h > w) rotate();
-				println("Loaded image:", rename, "D H W:", n, h, w); return;
+				if(print) println("Loaded image:", rename, "D H W:", n, h, w); return;
 
 			}
 			else println("Image was not found:", name);

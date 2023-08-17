@@ -84,22 +84,24 @@ namespace BNN {
 		return compiled = true;
 	}
 
-	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, idx nthr, float rate, idx epochs, idx nlog) {
+	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog, idx nthr) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		if(x0.dimension(0) < nthr) nthr = x0.dimension(0);
+		if(batch < 0) batch = x0.dimension(0);
+		if(batch < nthr) nthr = batch;
+		if(nlog < 0) nlog = epochs;
 		double t = timer();
 		bool result = 1;
 		float cost = 0;
 		float mult = 1.f / nthr;
-		idx step = x0.dimension(0) / nthr;
+		idx step = batch / nthr;
 		vector<NNet> nets(nthr, *this);
 		dim1<4> dx{ step, x0.dimension(1), x0.dimension(2), x0.dimension(3) };
 		dim1<4> dy{ step, y0.dimension(1), y0.dimension(2), y0.dimension(3) };
+		Tenarr x(batch, x0.dimension(1), x0.dimension(2), x0.dimension(3)); 
+		Tenarr y(batch, y0.dimension(1), y0.dimension(2), y0.dimension(3));
 		vector<int> indices = shuffled(x0.dimension(0));
-		Tenarr x(x0.dimensions());
-		Tenarr y(y0.dimensions());
-		for(idx i = 0; i < indices.size(); i++) {
+		for(idx i = 0; i < batch; i++) {
 			x.chip(i, 0) = x0.chip(indices[i], 0);
 			y.chip(i, 0) = y0.chip(indices[i], 0);
 		}
@@ -129,11 +131,20 @@ namespace BNN {
 		*this = net;
 		return true;
 	}
-	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, float rate, idx epochs, idx nlog) {
+	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs , float rate , idx batch , idx nlog ) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
+		if(batch < 0) batch = x0.dimension(0);
+		if(nlog < 0) nlog = epochs;
 		double t = timer();
-		float cost = train_job(x0, y0, epochs, nlog);
+		Tenarr x(batch, x0.dimension(1), x0.dimension(2), x0.dimension(3)); 
+		Tenarr y(batch, y0.dimension(1), y0.dimension(2), y0.dimension(3));
+		vector<int> indices = shuffled(x0.dimension(0));
+		for(idx i = 0; i < batch; i++) {
+			x.chip(i, 0) = x0.chip(indices[i], 0);
+			y.chip(i, 0) = y0.chip(indices[i], 0);
+		}
+		float cost = train_job(x, y, epochs, nlog);
 		if(cost < 0) {
 			println("Failed training the network !!!");
 			return false;

@@ -181,7 +181,7 @@ void reset_all() override {\
 		if(token == "SGD") return SGD::load(in);
 		else if(token == "AGD") return AGD::load(in);
 		else if(token == "NAG") return NAG::load(in);
-		else if(token == "Rmsprop") return RMSprop::load(in);
+		else if(token == "RMSprop") return RMSprop::load(in);
 		else if(token == "Adam") return Adam::load(in);
 		else return new Optimizer();
 	}
