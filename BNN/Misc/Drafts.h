@@ -1,5 +1,67 @@
 #if 1
 
+
+using Rensor = Eigen::Tensor<float, 3, Eigen::RowMajor, int>;
+
+inline void rm_convolve(Rensor& c, const Rensor& a, const Rensor& b, shp2 st, shp2 pa) {
+	idx ich = a.dimension(0);
+	idx och = b.dimension(0) / ich;
+	/*c.setZero();
+	for(int i = 0; i < och; i++) {
+		for(int j = 0; j < ich; j++) {
+			c.chip(i, 0) += a.chip(j, 0).pad(dim2<2>{shp2(pa[0], pa[0]), shp2(pa[1], pa[1])}).convolve(b.chip(i * ich + j, 0), dim1<2>{0, 1}).stride(dim1<2>{st[0], st[1]});
+		}
+	}
+	return;*/
+
+
+	for(idx k = 0; k < och; k++) {
+		for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+				float tmp = 0;
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx n = 0; n < ich; n++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+						for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+							tmp += a(n, j + m, i + l) * b(k * ich + n, m, l);
+						}
+					}
+				}
+				c(k, p, o) = tmp;
+			}
+
+		}
+	}
+}
+
+inline void cm_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	idx ich = a.dimension(0);
+	idx och = b.dimension(0) / ich;
+	for(int i = 0; i < och; i++) {
+		c.chip(i, 0).setZero();
+		for(int j = 0; j < ich; j++) {
+			c.chip(i, 0) += a.chip(j, 0).pad(dim2<2>{shp2(pa[0], pa[0]), shp2(pa[1], pa[1])}).convolve(b.chip(i * ich + j, 0), dim1<2>{0, 1}).stride(dim1<2>{st[0], st[1]});
+		}
+	}
+}
+struct TensorOP {
+	TensorOP(Tensor& data) : data(data), dim(data.dimensions()) {}
+	TensorOP(Tensor& data, shp3 dim, shp3 st = shp3(1, 1, 1), shp3 pa = shp3(0, 0, 0), shp3 in = shp3(0, 0, 0)) : data(data), dim(dim), st(st) {}
+	operator Tensor& () { return data; }
+	operator const Tensor& () const { return data; }
+	auto operator()() { return data.reshape(dim).inflate(in).pad(dim2<3>{shp2(pa[0]), shp2(pa[1]), shp2(pa[2])}).stride(st); }
+	const auto operator()() const { return data.reshape(dim).inflate(in).pad(dim2<3>{shp2(pa[0]), shp2(pa[1]), shp2(pa[2])}).stride(st); }
+	const float& operator() (idx i, idx j, idx k)const { return data.data()[i * st[0] + j * dim[0] * st[1] + k * dim[0] * dim[1] * st[2]]; }
+	float& operator() (idx i, idx j, idx k) { return data.data()[i * st[0] + j * dim[0] * st[1] + k * dim[0] * dim[1] * st[2]]; }
+	Tensor& data;
+	dim1<3> dim;
+	dim1<3> st{ 1,1,1 };
+	dim1<3> pa{ 0,0,0 };
+	dim1<3> in{ 1,1,1 };
+};
+
+
 inline void aconv1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 	dim1<2> str{ st[0], st[1] };
 	dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };

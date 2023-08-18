@@ -11,7 +11,7 @@ namespace BNN {
 				|| load(name + ".bmp", rename, nch) || load(name + ".tga", rename, nch) || load(name + ".pic", rename, nch)
 				|| load(name + ".ppm", rename, nch) || load(name + ".pgm", rename, nch) || load(name + ".psd", rename, nch)) {
 				if(landscape && h > w) rotate();
-				if(print) println("Loaded image:", rename, "D H W:", n, h, w); return;
+				if(print) println("Loaded image:", rename, "H W C:", h, w, n); return;
 
 			}
 			else println("Image was not found:", name);
@@ -19,7 +19,7 @@ namespace BNN {
 		~Image() { if(data) free(data); }
 		Tensor tensor() const;
 		Image(const Tensor& in);
-		Image(const Image& cpy) : data((uchar*)malloc(cpy.size())), w(cpy.w), h(cpy.h), n(cpy.n) {
+		Image(const Image& cpy) : data((uchar*)malloc(cpy.size())), h(cpy.h), w(cpy.w), n(cpy.n) {
 			for(idx i = 0; i < w * h * n; i++)
 				data[i] = cpy.data[i];
 		}
@@ -55,6 +55,6 @@ namespace BNN {
 		bool save(const std::string& name) const;
 		bool save_even(const std::string& name) const;
 		uchar* data = nullptr;
-		idx w = 0, h = 0, n = 0;
+		idx h = 0, w = 0, n = 0;
 	};
 }

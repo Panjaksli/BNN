@@ -9,22 +9,22 @@
 namespace BNN {
 	Tensor Image::tensor() const {
 		//pad to multiple of 2
-		Tensor res(n, h + h % 2, w + w % 2);
-		for(idx j = 0; j < w; j++) {
-			for(idx i = 0; i < h; i++) {
+		Tensor res(n, w + w % 2, h + h % 2);
+		for(idx i = 0; i < h; i++) {
+			for(idx j = 0; j < w; j++) {
 				for(idx k = 0; k < n; k++) {
-					res(k, i, j) = operator()(i, j, k) / 255.f;
+					res(k, j, i) = operator()(i, j, k) / 255.f;
 				}
 			}
 		}
 		return res;
 	}
-	Image::Image(const Tensor& in) : data((uchar*)malloc(product(in.dimensions()))), w(in.dimension(2)), h(in.dimension(1)), n(in.dimension(0)) {
+	Image::Image(const Tensor& in) : data((uchar*)malloc(product(in.dimensions()))), h(in.dimension(2)), w(in.dimension(1)), n(in.dimension(0)) {
 		Tensor tmp = in.clip(0.f, 1.f) * 255.f + 0.5f;
-		for(idx j = 0; j < w; j++) {
-			for(idx i = 0; i < h; i++) {
+		for(idx i = 0; i < h; i++) {
+			for(idx j = 0; j < w; j++) {
 				for(idx k = 0; k < n; k++) {
-					operator()(i, j, k) = tmp(k, i, j);
+					operator()(i, j, k) = tmp(k, j, i);
 				}
 			}
 		}
