@@ -35,7 +35,7 @@ namespace BNN {
 		return rafl() * (max - min) + min;
 	}
 	inline int raint(int min, int max) {
-		return rafl(min, max);
+		return int(rafl() * int(max - min + 1)) + min;
 	}
 	template <typename T>
 	T saturate(const T& x) {
@@ -47,7 +47,7 @@ namespace BNN {
 		for(int i = 0; i < n; i++)
 			shuff[i] = i;
 		for(int i = 0; i < n - 1; i++)
-			std::swap(shuff[i], shuff[raint(i, n)]);
+			std::swap(shuff[i], shuff[raint(i, n - 1)]);
 		return shuff;
 	}
 
@@ -70,7 +70,7 @@ namespace BNN {
 	}
 	template <class T>
 	inline void printr(T t) {
-		cout << t << "                \r";
+		cout << t << "\r";
 	}
 	template <class T, class ...Ts>
 	inline void printr(T t, Ts... ts) {
@@ -79,7 +79,7 @@ namespace BNN {
 	}
 	template <class T>
 	inline void println(T t) {
-		cout << t << "                \n";
+		cout << t << "\n";
 	}
 	template <class T, class ...Ts>
 	inline void println(T t, Ts... ts) {

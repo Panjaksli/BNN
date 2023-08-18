@@ -240,14 +240,14 @@ namespace BNN {
 			}
 		}
 	}
-	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa, float mult) {
+	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
 		idx och = ach * bch;
 		if(ach <= 1 && bch <= 1) {
 			if(st[0] <= 1 && st[1] <= 1) {
 				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
-				c.data.reshape(c.dim).chip(0, 0) += a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1})* mult;
+				c.data.reshape(c.dim).chip(0, 0) += a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
 			}
 			else {
 				float tmp;
@@ -261,7 +261,7 @@ namespace BNN {
 								tmp += a(0, j + m, i + l) * b(0, m, l);
 							}
 						}
-						c(0, p, o) += tmp * mult;
+						c(0, p, o) += tmp;
 					}
 				}
 			}
@@ -281,7 +281,7 @@ namespace BNN {
 						}
 					}
 					for(idx ch = 0; ch < och; ch++)
-						c(ch, p, o) += tmp[ch] * mult;
+						c(ch, p, o) += tmp[ch];
 				}
 			}
 		}
@@ -300,7 +300,7 @@ namespace BNN {
 						}
 					}
 					for(idx ch = 0; ch < och; ch++)
-						c(ch, p, o) += tmp[ch] * mult;
+						c(ch, p, o) += tmp[ch];
 				}
 			}
 		}
@@ -321,7 +321,7 @@ namespace BNN {
 						}
 					}
 					for(idx ch = 0; ch < och; ch++)
-						c(ch, p, o) += tmp[ch] * mult;
+						c(ch, p, o) += tmp[ch];
 				}
 			}
 		}
@@ -348,11 +348,11 @@ namespace BNN {
 		//return d;
 	}
 	template <class derived>
-	inline void acc_mul(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, float mult, shp2 dims = { 1, 0 }) {
+	inline void acc_mul(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
 		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
 		for(idx i = 0; i < a.dimension(0); i++) {
 			for(idx j = 0; j < b.dimension(0); j++) {
-				c.chip(i * b.dimension(0) + j, 0) += mult * a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims });
+				c.chip(i * b.dimension(0) + j, 0) += a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims });
 			}
 		}
 		//return d;

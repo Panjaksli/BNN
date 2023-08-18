@@ -14,7 +14,7 @@ namespace BNN {
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
 		bool Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1,  idx batch = -1, idx nlog = -1);
-		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16);
+		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16, idx steps = -1);
 		void Clear();
 		void Print() const;
 		dim1<3> In_dims()const { return graph.front()->idims(); }
@@ -74,7 +74,7 @@ namespace BNN {
 			return graph.size() >= 2 && graph.front()->type() == t_Input && (graph.back()->type() == t_Output || graph.back()->type() == t_OutShuf);
 		}
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
-		float train_job(const Tenarr& x0, const Tenarr& y0, idx epochs = 1000, idx nlog = 100, idx index = 0,bool log = 1);
+		float train_job(const Tenarr& x0, const Tenarr& y0, idx epochs = 1000, idx nlog = 100, idx index = 0, idx ep_off = 0, bool log = 1);
 		vector<Layer*> graph;
 		Optimizer* optimizer = nullptr;
 		std::string name = "Net";

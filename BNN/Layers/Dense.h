@@ -15,10 +15,10 @@ namespace BNN {
 			dz = y() * dz.unaryExpr(af.dx());
 			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
 		}
-		void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) override {
+		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
-			db += dz * inv_n;
-			acc_mul(dw, dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), inv_n, { 1,0 });
+			db += dz;
+			acc_mul(dw, dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), { 1,0 });
 			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
 		}
 		void print()const override {

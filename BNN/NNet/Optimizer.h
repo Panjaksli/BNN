@@ -20,7 +20,7 @@ void compile(Layer* first) override {\
 };\
 void get_grad() override { \
 	for (idx i = 0 ; i < nodes.size(); i++) {\
-		nodes[i].get_grad(i < nodes.size() - 1, inv_n);\
+		nodes[i].get_grad(i < nodes.size() - 1);\
 	}\
 };\
 void reset_grad() override {\
@@ -38,7 +38,14 @@ void reset_all() override {\
 		n.reset_grad();\
 		n.reset_cache();\
 	}\
-}
+}\
+idx size() override { return nodes.size(); }\
+Tensor* get_vw(idx i) override { return nodes[i].get_vw(); } \
+Tensor* get_vb(idx i) override { return nodes[i].get_vb(); }\
+Tensor* get_mw(idx i) override { return nodes[i].get_mw(); }\
+Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
+
+
 	class Optimizer {
 	public:
 		Optimizer() {}
@@ -52,6 +59,11 @@ void reset_all() override {\
 		virtual void reset_all() {}
 		virtual void print() { println("None"); }
 		virtual void save(std::ostream& out) { out << "Optimizer" SPC "None" << "\n"; }
+		virtual idx size() { return 0; }
+		virtual Tensor* get_vw(idx i) { return nullptr; }
+		virtual Tensor* get_vb(idx i) { return nullptr; }
+		virtual Tensor* get_mw(idx i) { return nullptr; }
+		virtual Tensor* get_mb(idx i) { return nullptr; }
 		virtual Optimizer* clone() const { return new Optimizer(); }
 		float alpha = 0.001f, inv_n = 1.f;
 	};
@@ -61,7 +73,7 @@ void reset_all() override {\
 		SGD(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha);
+				n.update_grad(alpha, inv_n);
 			}
 		};
 		void print() override {
@@ -85,7 +97,7 @@ void reset_all() override {\
 		AGD(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, mu);
+				n.update_grad(alpha, mu, inv_n);
 			}
 		};
 		void print() override {
@@ -109,7 +121,7 @@ void reset_all() override {\
 		NAG(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, mu);
+				n.update_grad(alpha, mu, inv_n);
 			}
 		};
 		void print() override {
@@ -133,7 +145,7 @@ void reset_all() override {\
 		RMSprop(float alpha, float b, float eps, Layer* first = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, beta, eps);
+				n.update_grad(alpha, beta, eps, inv_n);
 			}
 		};
 		void print() override {
@@ -148,7 +160,7 @@ void reset_all() override {\
 			return new RMSprop(a, b, e);
 		}
 		virtual RMSprop* clone() const override { return new RMSprop(*this); };
-		float beta = 0.9f, eps = 1e-6f;
+		float beta = 0.9f, eps = 1e-8f;
 	};
 
 	class Adam : public Optimizer {
@@ -158,7 +170,7 @@ void reset_all() override {\
 		Adam(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, beta1, beta2, eps);
+				n.update_grad(alpha, beta1, beta2, eps, inv_n);
 			}
 		};
 		void save(std::ostream& out) override {
@@ -173,7 +185,7 @@ void reset_all() override {\
 			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps, "\tNodes:", nodes.size());
 		}
 		virtual Adam* clone() const override { return new Adam(*this); };
-		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-6f;
+		float beta1 = 0.9f, beta2 = 0.999f, eps = 1e-8f;
 	};
 	inline Optimizer* Optimizer_load(std::istream& in) {
 		std::string token;

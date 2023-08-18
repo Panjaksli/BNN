@@ -27,7 +27,7 @@ namespace BNN {
 		//propagates gradient backwards
 		virtual void derivative(bool ptrain) {}
 		//propagates gradient and accumulates weights/filter
-		virtual void gradient(Tensor& dw, Tensor& db, bool ptrain, float inv_n = 1.f) {}
+		virtual void gradient(Tensor& dw, Tensor& db, bool ptrain) {}
 		virtual LType type() const = 0;
 		LType ptype()const { return prev ? prev->type() : T_None; }
 		LType ntype()const { return next ? next->type() : T_None; }
