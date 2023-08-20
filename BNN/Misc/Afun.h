@@ -106,23 +106,25 @@ namespace BNN {
 			static float dx(float x) { return 1.f - fx(x) * fx(x); }
 			static constexpr Type type = t_tanh;
 		};
-		//like swish but cubic growth
+		//like swish and cubl but cubic growth
 		struct cub {
-			static float fx(float x) { 
+			static float fx(float x) {
 				float x1 = fmaxf(a * x + 1.f, 0.f);
 				float x2 = fmaxf(b * x + 1.f, 0.f);
 				return x1 * x1 * x1 - x2 * x2;
 			}
-			static float dx(float x) { 
+			static float dx(float x) {
 				float x1 = fmaxf(a * x + 1.f, 0.f);
 				float x2 = fmaxf(b * x + 1.f, 0.f);
 				return (3.f * a) * x1 * x1 - (2.f * b) * x2;
 			}
 			static constexpr Type type = t_cub;
-			static constexpr float a = 0.297;
-			static constexpr float b = 0.213;
+			static constexpr float a = 0.3;
+			static constexpr float b = 0.2;
 		};
 		//poor mans swish (lin growth after x ~ 0.928)
+		//shines best in multilayer CNNs, where relu and lrelu struggle
+		//is much faster than swish (no exp, even no cmov or branching)
 		struct cubl {
 			static float fx(float x) {
 				float x1 = fmaxf(a * x + 1.f, 0.f);
@@ -135,15 +137,21 @@ namespace BNN {
 				return fminf((3.f * a) * x1 * x1 - (2.f * b) * x2, 1.f);
 			}
 			static constexpr Type type = t_cubl;
-			static constexpr float a = 0.297;
-			static constexpr float b = 0.213;
-			static constexpr float c = 0.29;
-			static constexpr float d = 0.74;
+			static constexpr float a = 0.3;
+			static constexpr float b = 0.2;
+			static constexpr float c = 0.24435912045;
+			static constexpr float d = 0.68914872895;
 		};
 	};
 }
 //just storing working coeffs
+// best (derivative goes through 0.5 at x = 0)
 //static constexpr float a = 0.3;
 //static constexpr float b = 0.2;
-//static constexpr float c = 0.246;
-//static constexpr float d = 0.687;
+//static constexpr float c = 0.24435912045;
+//static constexpr float d = 0.68914872895;
+// worse ?
+//static constexpr float a = 0.297;
+//static constexpr float b = 0.213;
+//static constexpr float c = 0.28981184835;
+//static constexpr float d = 0.74010139985;
