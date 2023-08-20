@@ -33,7 +33,7 @@ namespace BNN {
 	};
 	class Afun {
 	public:
-		enum Type { t_lin, t_relu, t_lrelu, t_sat, t_sig, t_clu, t_swish, t_tanh } type = t_relu;
+		enum Type { t_lin, t_relu, t_lrelu, t_sat, t_sig, t_clu, t_swish, t_tanh, t_cub, t_cubl } type = t_relu;
 		Afun() {}
 		Afun(Type type) : type(type) {}
 		inline auto fx() const {
@@ -46,6 +46,8 @@ namespace BNN {
 				case t_clu:return clu::fx;
 				case t_swish:return swish::fx;
 				case t_tanh:return tanh::fx;
+				case t_cub:return cub::fx;
+				case t_cubl:return cubl::fx;
 				default:return lin::fx;
 			}
 		}
@@ -59,6 +61,8 @@ namespace BNN {
 				case t_clu:return clu::dx;
 				case t_swish:return swish::dx;
 				case t_tanh:return tanh::dx;
+				case t_cub:return cub::dx;
+				case t_cubl:return cubl::dx;
 				default:return lin::dx;
 			}
 		}
@@ -68,17 +72,17 @@ namespace BNN {
 			static constexpr Type type = t_lin;
 		};
 		struct relu {
-			static float fx(float x) { return max(x, 0.f); }
+			static float fx(float x) { return fmaxf(x, 0.f); }
 			static float dx(float x) { return (x > 0.f); }
 			static constexpr Type type = t_relu;;
 		};
 		struct lrelu {
-			static float fx(float x) { return max(0.01f * x, x); }
+			static float fx(float x) { return fmaxf(0.01f * x, x); }
 			static float dx(float x) { return (x > 0.f) * 0.99f + 0.01f; }
 			static constexpr Type type = t_lrelu;
 		};
 		struct sat {
-			static float fx(float x) { return min(max(x, 0.f), 1.f); }
+			static float fx(float x) { return fminf(fmaxf(x, 0.f), 1.f); }
 			static float dx(float x) { return (x > 0.f) * (x < 1.f); }
 			static constexpr Type type = t_sat;
 		};
@@ -88,7 +92,7 @@ namespace BNN {
 			static constexpr Type type = t_sig;
 		};
 		struct clu {
-			static float fx(float x) { return min(max(x, -1.f), 1.f); }
+			static float fx(float x) { return fminf(fmaxf(x, -1.f), 1.f); }
 			static float dx(float x) { return (x > -1.f) * (x < 1.f); }
 			static constexpr Type type = t_clu;
 		};
@@ -102,5 +106,44 @@ namespace BNN {
 			static float dx(float x) { return 1.f - fx(x) * fx(x); }
 			static constexpr Type type = t_tanh;
 		};
+		//like swish but cubic growth
+		struct cub {
+			static float fx(float x) { 
+				float x1 = fmaxf(a * x + 1.f, 0.f);
+				float x2 = fmaxf(b * x + 1.f, 0.f);
+				return x1 * x1 * x1 - x2 * x2;
+			}
+			static float dx(float x) { 
+				float x1 = fmaxf(a * x + 1.f, 0.f);
+				float x2 = fmaxf(b * x + 1.f, 0.f);
+				return (3.f * a) * x1 * x1 - (2.f * b) * x2;
+			}
+			static constexpr Type type = t_cub;
+			static constexpr float a = 0.297;
+			static constexpr float b = 0.213;
+		};
+		//poor mans swish (lin growth after x ~ 0.928)
+		struct cubl {
+			static float fx(float x) {
+				float x1 = fmaxf(a * x + 1.f, 0.f);
+				float x2 = fmaxf(b * x + 1.f, 0.f);
+				return fminf(x1 * x1 * x1 - x2 * x2, fmaxf(x - c, d));
+			}
+			static float dx(float x) {
+				float x1 = fmaxf(a * x + 1.f, 0.f);
+				float x2 = fmaxf(b * x + 1.f, 0.f);
+				return fminf((3.f * a) * x1 * x1 - (2.f * b) * x2, 1.f);
+			}
+			static constexpr Type type = t_cubl;
+			static constexpr float a = 0.297;
+			static constexpr float b = 0.213;
+			static constexpr float c = 0.29;
+			static constexpr float d = 0.74;
+		};
 	};
 }
+//just storing working coeffs
+//static constexpr float a = 0.3;
+//static constexpr float b = 0.2;
+//static constexpr float c = 0.246;
+//static constexpr float d = 0.687;

@@ -74,7 +74,7 @@ namespace BNN {
 		Tensor& data;
 		dim1<3> dim;
 	};
-
+	template <int cache = 1024>
 	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
@@ -101,10 +101,10 @@ namespace BNN {
 			}
 		}
 		else if(ich <= 1) {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -114,7 +114,7 @@ namespace BNN {
 							}
 						}
 					}
-					std::copy(tmp, tmp + och, &c(0, p, o));
+					memmove(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
@@ -137,10 +137,10 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -152,11 +152,12 @@ namespace BNN {
 							}
 						}
 					}
-					std::copy(tmp, tmp + och, &c(0, p, o));
+					memmove(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 	}
+	template <int cache = 1024>
 	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -184,10 +185,10 @@ namespace BNN {
 			}
 		}
 		else if(ach <= 1) {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -197,15 +198,15 @@ namespace BNN {
 							}
 						}
 					}
-					std::copy(tmp, tmp + och, &c(0, p, o));
+					memmove(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 		else if(bch <= 1) {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -215,15 +216,15 @@ namespace BNN {
 							}
 						}
 					}
-					std::copy(tmp, tmp + och, &c(0, p, o));
+					memmove(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 		else {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -235,11 +236,12 @@ namespace BNN {
 							}
 						}
 					}
-					std::copy(tmp, tmp + och, &c(0, p, o));
+					memmove(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 	}
+	template <int cache = 1024>
 	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -267,10 +269,10 @@ namespace BNN {
 			}
 		}
 		else if(ach <= 1) {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -286,10 +288,10 @@ namespace BNN {
 			}
 		}
 		else if(bch <= 1) {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
@@ -305,10 +307,10 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[och];
+			float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-					std::fill(tmp, tmp + och, 0);
+					memset(tmp, 0, 4 * och);
 					idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
 					idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
 					for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {

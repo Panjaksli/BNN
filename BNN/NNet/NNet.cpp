@@ -185,7 +185,7 @@ namespace BNN {
 				optimizer->get_grad();
 			}
 			cost *= optimizer->inv_n;
-			if(cost > 1e3f) { return -1; }
+			if(cost > 1e6f) { return -1; }
 			min_cost = fminf(cost, min_cost);
 			optimizer->update_grad();
 			if(log && i % log_step == 0) {
