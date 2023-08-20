@@ -8,7 +8,7 @@ Computations use the bare minimum of temporaries and leverage column major layou
 The Library provides many non-standard features like the previously mentioned **custom convolution algorithm**, tons of custom activation functions mainly **cubic** and **cubic-linear** that aim to replace swish function with superior performance both speed-wise and training-wise.
 ## Interface
 The interface is as simple as possible - create vector<Layer> and push input, hidden layers and output, create optimizer and then pass both to the network, it manages the given memory itself **(dont delete anything manually!)**.
-```
+```cpp
 using namespace BNN;
 vector<Layer*> top;
 top.push_back(new Input(shp3(3, 240, 160)));
@@ -22,7 +22,7 @@ NNet net(top, opt, "Network name");
 If you do any changes to the architecture after that, you need to compile it before running !\
 For training you can then use the Train_single() or Train_parallel() functions, followed by Save() to save the network to a hybrid text/binary file.
 Save_images() can be used to save the output tensor as png image(s).
-```
+```cpp
 for(int i = 0; i < 100; i++) {
   // input output, epochs, rate (0 = default), batch size, log count, threads, steps (each step shuffles dataset) 
 	if(!net.Train_parallel(x, y, 20, 0, 48, 100, 16, 10)) break;
