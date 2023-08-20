@@ -34,8 +34,8 @@ for(int i = 0; i < 100; i++) {
 ## Comparison relu vs cubic-linear vs swish
 ### Training cost in 2 layer upscaling CNN:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/41292bdb-1f6f-4afc-a447-e4f843288343)
-Cost-wise relu is the best, cubl slightly outperforms swish.
+Loss-wise relu is the best, cubl slightly outperforms swish.
 ### Image quality:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/e066678c-629e-4c8d-99d4-abff40ee6de3)
-Quality-wise cubl and swish provide smoother image than relu.
+Quality-wise cubl and swish provide smoother upscaled image than relu.
 
