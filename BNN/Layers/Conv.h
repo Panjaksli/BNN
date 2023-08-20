@@ -20,16 +20,14 @@ namespace BNN {
 		void derivative(bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
-			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
-			if(ptrain) convolve({ x(),din }, dy, wr, 1, ks - pa - 1);
+			if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
-			auto wr = w.reverse(dimx<bool, 3>{false, true, true});
 			if(bias)db += dz.sum(dim1<2>{1,2}).reshape(b.dimensions());
 			acc_convolve(dw, x().reshape(din), dy, 1, pa);
-			if(ptrain) convolve({ x(),din }, dy, wr, 1, ks - pa - 1);
+			if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
 		}
 
 		void print()const override {

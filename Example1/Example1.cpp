@@ -27,11 +27,12 @@ int main() {
 		top.push_back(new Input(shp3(3, 240, 160)));
 		top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_cubl));
 		top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_cubl));
+		top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_cubl));
 		top.push_back(new OutShuf(top.back(), 2));
 		auto opt = new Adam(0.001f);
-		NNet net(top, opt, "ups_c5_c3_ps2");
+		NNet net(top, opt, "ups_c5_c3_c3_ps2_fix");
 	#else
-		NNet net("ups_c5_c3_ps2");
+		NNet net("ups_c5_c3_c3_ps2_fix");
 		/*net.Set_optim(new RMSprop(0.002f));
 		net.Compile();*/
 	#endif
