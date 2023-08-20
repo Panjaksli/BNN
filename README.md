@@ -7,8 +7,9 @@ Computations use the bare minimum of temporaries and leverage column major layou
 ## Features
 The Library provides many non-standard features like the previously mentioned **custom convolution algorithm**, tons of custom activation functions mainly **cubic** and **cubic-linear** that aim to replace swish function with superior performance both speed-wise and training-wise.
 ## Interface
-The interface is as simple as possible - create vector<Layer> and push input, hidden layers and output, create optimizer and then pass both to the network, it manages its memory itself.
+The interface is as simple as possible - create vector<Layer> and push input, hidden layers and output, create optimizer and then pass both to the network, it manages the given memory itself **(dont delete anything manually!)**.
 ```
+using namespace BNN;
 vector<Layer*> top;
 top.push_back(new Input(shp3(3, 240, 160)));
 top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_cubl));
