@@ -21,17 +21,17 @@ int main() {
 		Tenarr z(test_set, 3, 240, 160);
 		for(idx i = 0; i < test_set; i++)
 			z.chip(i, 0) = Image(test_folder + std::to_string(i) + ".png", 3).tensor();
-	#if 1
+	#if 0
 		//hidden layers
 		vector<Layer*> top;
 		top.push_back(new Input(shp3(3, 240, 160)));
-		top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_swish));
-		top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_swish));
+		top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_cubl));
+		top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_cubl));
 		top.push_back(new OutShuf(top.back(), 2));
 		auto opt = new Adam(0.001f);
 		NNet net(top, opt, "ups_c5_c3_ps2");
 	#else
-		NNet net("ups_c5x32_c3x32_c3_ps2_cubl");
+		NNet net("ups_c5_c3_ps2");
 		/*net.Set_optim(new RMSprop(0.002f));
 		net.Compile();*/
 	#endif
