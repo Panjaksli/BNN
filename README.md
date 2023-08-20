@@ -30,6 +30,7 @@ for(int i = 0; i < 100; i++) {
 	net.Save_images(z);
 }
 ```
+<!---
 ## Comparison lrelu vs cubic-linear vs swish
 ### Training cost in 2 layer upscaling CNN:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/da8af6b2-96b3-4212-8a4c-4a1fa411c5cb)
@@ -37,3 +38,4 @@ As you can see, the cubl and swish are outperforming lrelu by miles. Cubl has a 
 ### Image quality:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/1172d914-1f6e-4c2a-bbfa-5f84bfe1f87a)
 Swish and cubl dont suffer the same horrible artifacts as lrelu. Cubl achieves a tiny bit better local contrast than swish (eg. the text on the sign)
+-->
