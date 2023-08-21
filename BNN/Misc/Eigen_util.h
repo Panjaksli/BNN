@@ -74,7 +74,7 @@ namespace BNN {
 		Tensor& data;
 		dim1<3> dim;
 	};
-	template <int cache = 1024>
+	template <int cache = 4096>
 	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
@@ -160,7 +160,7 @@ namespace BNN {
 	//fixing a fuckup where I was convolving incorrect filters in backprop, also reverse operation is included inhouse
 	//stupid me
 	//It was convolving for example 4 output filters by 4 first filters of the kernel which werent the filters corresponding to the input !!!
-	template <int cache = 1024>
+	template <int cache = 4096>
 	inline void rev_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
@@ -246,7 +246,7 @@ namespace BNN {
 		}
 	}
 
-	template <int cache = 1024>
+	template <int cache = 4>
 	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -330,7 +330,7 @@ namespace BNN {
 			}
 		}
 	}
-	template <int cache = 1024>
+	template <int cache = 4096>
 	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);

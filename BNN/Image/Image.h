@@ -17,7 +17,8 @@ namespace BNN {
 			else println("Image was not found:", name);
 		}
 		~Image() { if(data) free(data); }
-		Tensor tensor() const;
+		Tensor tensor_rgb() const;
+		Tensor tensor_yuv() const;
 		Image(const Tensor& in);
 		Image(const Image& cpy) : data((uchar*)malloc(cpy.size())), h(cpy.h), w(cpy.w), n(cpy.n) {
 			for(idx i = 0; i < w * h * n; i++)

@@ -21,8 +21,8 @@ namespace BNN {
 		dim1<3> Out_dims()const { return graph.back()->odims(); }
 		idx In_dim(idx i)const { return In_dims()[i]; }
 		idx Out_dim(idx i)const { return Out_dims()[i]; }
-		idx In_size()const { return product(In_dims()); }
-		idx Out_size()const { return product(Out_dims()); }
+		idx In_size()const { return graph.front()->isize(); }
+		idx Out_size()const { return graph.back()->osize(); }
 		Optimizer* Optim() { return optimizer; }
 		const Optimizer* Optim() const { return optimizer; }
 		void Set_optim(Optimizer* opt) { if(opt) { if(optimizer) delete optimizer; optimizer = opt; compiled = 0; } }
@@ -38,9 +38,9 @@ namespace BNN {
 			return graph.front()->compute(x);
 		}
 		Tenarr Compute_batch(const Tenarr& x) const {
-			Tenarr y(x.dimension(0), Out_dim(0), Out_dim(1), Out_dim(2));
-			for(idx i = 0; i < x.dimension(0); i++) {
-				y.chip(i, 0) = Compute(x.chip(i, 0));
+			Tenarr y(Out_dim(0), Out_dim(1), Out_dim(2), x.dimension(3));
+			for(idx i = 0; i < x.dimension(3); i++) {
+				y.chip(i, 3) = Compute(x.chip(i, 3));
 			}
 			return y;
 		}
@@ -74,7 +74,8 @@ namespace BNN {
 			return graph.size() >= 2 && graph.front()->type() == t_Input && (graph.back()->type() == t_Output || graph.back()->type() == t_OutShuf);
 		}
 		bool integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const;
-		float train_job(const Tenarr& x0, const Tenarr& y0, idx epochs = 1000, idx nlog = 100, idx index = 0, idx ep_off = 0, bool log = 1);
+		float train_job(const Tenarr& x0, const Tenarr& y0, const vector<int>& indices, idx beg, idx end,
+			idx epochs = 1000, idx nlog = 100, idx index = 0, idx ep_off = 0, bool log = 1);
 		vector<Layer*> graph;
 		Optimizer* optimizer = nullptr;
 		std::string name = "Net";

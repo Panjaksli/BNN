@@ -40,7 +40,7 @@ namespace BNN {
 		return *this;
 	}
 	bool NNet::integrity_check(const dim1<4>& dim_x, const dim1<4>& dim_y) const {
-		if(dim_x[0] != dim_y[0]) {
+		if(dim_x[3] != dim_y[3]) {
 			println("Error:  Number of training samples mismatch !");
 			return false;
 		}
@@ -48,11 +48,11 @@ namespace BNN {
 			println("Error:  Invalid network graph !");
 			return false;
 		}
-		else if(dim_x[1] * dim_x[2] * dim_x[3] != In_size()) {
+		else if(dim_x[0] * dim_x[1] * dim_x[2] != In_size()) {
 			println("Error:  Input data mismatch !");
 			return false;
 		}
-		else if(dim_y[1] * dim_y[2] * dim_y[3] != Out_size()) {
+		else if(dim_y[0] * dim_y[1] * dim_y[2] != Out_size()) {
 			println("Error:  Output data mismatch !");
 			return false;
 		}
@@ -87,7 +87,7 @@ namespace BNN {
 	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog, idx threads, idx steps) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		if(batch < 0) batch = x0.dimension(0);
+		if(batch < 0) batch = x0.dimension(3);
 		if(batch < threads) threads = batch;
 		if(nlog <= 0) nlog = epochs;
 		if(steps <= 0) steps = 1;
@@ -99,23 +99,15 @@ namespace BNN {
 		double t = timer();
 		optimizer->reset_all();
 		optimizer->inv_n = 1.f / batch_sz;
-		dim1<4> dx{ batch_sz, x0.dimension(1), x0.dimension(2), x0.dimension(3) };
-		dim1<4> dy{ batch_sz, y0.dimension(1), y0.dimension(2), y0.dimension(3) };
-		Tenarr x(batch, x0.dimension(1), x0.dimension(2), x0.dimension(3));
-		Tenarr y(batch, y0.dimension(1), y0.dimension(2), y0.dimension(3));
 		NNet net(*this);
 		for(idx step = 0; step < steps; step++) {
 			cost = 0;
 			vector<NNet> nets(threads, net);
-			vector<int> indices = shuffled(x0.dimension(0));
-			for(idx i = 0; i < batch; i++) {
-				x.chip(i, 0) = x0.chip(indices[i], 0);
-				y.chip(i, 0) = y0.chip(indices[i], 0);
-			}
-#pragma omp parallel for
+			vector<int> indices = shuffled(x0.dimension(3));
+#pragma omp parallel for shared(x0,y0)
 			for(idx i = 0; i < threads; i++) {
-				dim1<4> o{ i * batch_sz, 0, 0, 0 };
-				float cst = nets[i].train_job(x.slice(o, dx), y.slice(o, dy), epochs, nlog, i, step * epochs, i == 0);
+				idx off = i * batch_sz;
+				float cst = nets[i].train_job(x0, y0, indices, off, off + batch_sz, epochs, nlog, i, step * epochs, i == 0);
 				bool res = cst >= 0;
 #pragma omp atomic
 				result &= res;
@@ -139,7 +131,7 @@ namespace BNN {
 					if(net.optimizer->get_mb(i)) *net.optimizer->get_mb(i) += mult * (*n.optimizer->get_mb(i));
 				}
 			}
-			printr("Step:", step, "Cost:", cost * mult, "Time:", timer(t), "                        ");
+			printr("Step:", step + 1, "Cost:", cost * mult, "Time:", timer(t), "                        ");
 		}
 		println("Trained Network:", name, "Cost:", cost * mult, "Time:", timer(t), "                        ");
 		*this = net;
@@ -148,19 +140,13 @@ namespace BNN {
 	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		if(batch < 0) batch = x0.dimension(0);
+		if(batch < 0) batch = x0.dimension(3);
 		if(nlog < 0) nlog = epochs;
-		optimizer->inv_n = 1.f / x0.dimension(0);
+		optimizer->inv_n = 1.f / x0.dimension(3);
 		optimizer->reset_all();
 		double t = timer();
-		Tenarr x(batch, x0.dimension(1), x0.dimension(2), x0.dimension(3));
-		Tenarr y(batch, y0.dimension(1), y0.dimension(2), y0.dimension(3));
-		vector<int> indices = shuffled(x0.dimension(0));
-		for(idx i = 0; i < batch; i++) {
-			x.chip(i, 0) = x0.chip(indices[i], 0);
-			y.chip(i, 0) = y0.chip(indices[i], 0);
-		}
-		float cost = train_job(x, y, epochs, nlog);
+		vector<int> indices = shuffled(x0.dimension(3));
+		float cost = train_job(x0, y0, indices, 0, batch, epochs, nlog);
 		if(cost < 0) {
 			println("Failed training the network !!!");
 			return false;
@@ -169,7 +155,7 @@ namespace BNN {
 		return true;
 	}
 
-	float NNet::train_job(const Tenarr& x0, const Tenarr& y0, idx epochs, idx nlog, idx index, idx ep_off, bool log) {
+	float NNet::train_job(const Tenarr& x0, const Tenarr& y0, const vector<int>& indices, idx beg, idx end, idx epochs, idx nlog, idx index, idx ep_off, bool log) {
 		float min_cost = 1e6f;
 		double t = timer();
 		double dt = timer();
@@ -179,9 +165,9 @@ namespace BNN {
 		float cost = 0;
 		for(idx i = 1; i <= epochs; i++) {
 			cost = 0;
-			for(idx j = 0; j < x0.dimension(0); j++) {
-				graph.front()->predict(x0.chip(j, 0));
-				cost += graph.back()->error(y0.chip(j, 0));
+			for(idx j = beg; j < end; j++) {
+				graph.front()->predict(x0.chip(indices[j], 3));
+				cost += graph.back()->error(y0.chip(indices[j], 3));
 				optimizer->get_grad();
 			}
 			cost *= optimizer->inv_n;
@@ -246,8 +232,8 @@ namespace BNN {
 	void NNet::Save_images(const Tenarr& x) const {
 		create_directories(name);
 		Tenarr y = Compute_batch(x);
-		for(idx i = 0; i < y.dimension(0); i++)
-			Image(y.chip(i, 0)).save(name + "/" + std::to_string(i) + ".png");
+		for(idx i = 0; i < y.dimension(3); i++)
+			Image(y.chip(i, 3)).save(name + "/" + std::to_string(i) + ".png");
 	}
 	void NNet::Clear() {
 		compiled = false;

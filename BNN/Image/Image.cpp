@@ -7,7 +7,7 @@
 #include "stb_image_write.h"
 #include "Image.h"
 namespace BNN {
-	Tensor Image::tensor() const {
+	Tensor Image::tensor_rgb() const {
 		//pad to multiple of 2
 		Tensor res(n, w + w % 2, h + h % 2);
 		for(idx i = 0; i < h; i++) {
@@ -15,6 +15,22 @@ namespace BNN {
 				for(idx k = 0; k < n; k++) {
 					res(k, j, i) = operator()(i, j, k) / 255.f;
 				}
+			}
+		}
+		return res;
+	}
+	Tensor Image::tensor_yuv() const {
+		//pad to multiple of 2
+		float rgb[16]{};
+		Tensor res(n, w + w % 2, h + h % 2);
+		for(idx i = 0; i < h; i++) {
+			for(idx j = 0; j < w; j++) {
+				for(idx k = 0; k < n; k++) {
+					rgb[k] = operator()(i, j, k) / 255.f;
+				}
+				res(0, j, i) = 0.299f * rgb[0] + 0.587f * rgb[1] + 0.114 * rgb[2];
+				res(1, j, i) = -0.147f * rgb[0] - 0.289f * rgb[1] + 0.436 * rgb[2];
+				res(2, j, i) = 0.615f * rgb[0] - 0.515f * rgb[1] - 0.1f * rgb[2];
 			}
 		}
 		return res;
