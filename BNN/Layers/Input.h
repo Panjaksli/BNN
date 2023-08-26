@@ -23,7 +23,7 @@ namespace BNN {
 			return next->predict();
 		}
 		void print()const override {
-			println("Input\t|", "\tIn:", odim(0), odim(1), odim(2), "\tOut:", odim(0), odim(1), odim(2));
+			println("Input\t|", "\tDim:", odim(0), odim(1), odim(2));
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden Input" SPC odim(0) SPC odim(1) SPC odim(2) << "\n";

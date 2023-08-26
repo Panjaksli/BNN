@@ -13,8 +13,7 @@ namespace BNN {
 			if(ptrain) x() = y().reshape(pdims()).unaryExpr([&sd, weight, this](float x) { return x * (rand_fl(sd) > rate) * weight; });;
 		}
 		void print()const override {
-			println("Dropout\t|", "\tIn:", pdim(0), pdim(1), pdim(2),
-				"\tOut:", odim(0), odim(1), odim(2), "\tRate:", rate);
+			println("Dropout\t|", "\tDim:", odim(0), odim(1), odim(2), "\tRate:", rate);
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden Dropout" SPC odim(0) SPC odim(1) SPC odim(2) SPC rate << "\n";

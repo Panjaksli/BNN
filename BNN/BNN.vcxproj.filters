@@ -101,5 +101,8 @@
     <ClInclude Include="Layers\PixShuf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Layers\Resize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

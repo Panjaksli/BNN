@@ -20,8 +20,7 @@ namespace BNN {
 			if(ptrain) all_convolve({ x(),din }, y(), w, st, pa);
 		}
 		void print()const override {
-			println("AvgUpl\t|", "\tIn:", din[0], din[1], din[2],
-				"\tOut:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1], "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
+			println("AvgUpl\t|", "\tDim:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1], "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden AvgUpool" SPC din[0] SPC din[1] SPC din[2] SPC ks[0]

@@ -219,6 +219,7 @@
     <ClInclude Include="Image\stb_image_write.h" />
     <ClInclude Include="Layers\OutShuf.h" />
     <ClInclude Include="Layers\PixShuf.h" />
+    <ClInclude Include="Layers\Resize.h" />
     <ClInclude Include="Misc\Afun.h" />
     <ClInclude Include="Layers\AvgPool.h" />
     <ClInclude Include="Layers\AvgUpool.h" />

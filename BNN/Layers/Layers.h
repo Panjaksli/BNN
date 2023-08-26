@@ -10,6 +10,7 @@
 #include "TConv.h"
 #include "Dropout.h"
 #include "PixShuf.h"
+#include "Resize.h"
 namespace BNN {
 	inline Layer* Layer_load(std::istream& in) {
 		std::string token;
@@ -24,6 +25,8 @@ namespace BNN {
 			return AvgPool::load(in);
 		else if(token == "AvgUpool")
 			return AvgUpool::load(in);
+		else if(token == "Dense")
+			return Dense::load(in);
 		else if(token == "Conv")
 			return Conv::load(in);
 		else if(token == "TConv")
@@ -32,8 +35,8 @@ namespace BNN {
 			return Dropout::load(in);
 		else if(token == "PixShuf")
 			return PixShuf::load(in);
-		else if(token == "Dense")
-			return Dense::load(in);
+		else if(token == "Resize")
+			return Resize::load(in);
 		else return nullptr;
 	}
 }

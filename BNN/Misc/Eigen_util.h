@@ -417,6 +417,31 @@ namespace BNN {
 			}
 		}
 	}
+	//bilinear resize
+	template<int cache = 1024>
+	void bilinear(Reshape y, const Tensor& x) {
+		float tmp[cache];
+		float s1 = y.dim[1] > 1 ? (x.dimension(1) - 1) / (y.dim[1] - 1.f) : 0;
+		float s2 = y.dim[2] > 1 ? (x.dimension(2) - 1) / (y.dim[2] - 1.f) : 0;
+		for(idx i = 0; i < y.dim[2]; i++) {
+			idx li = i * s2;
+			idx hi = min(li + 1, x.dimension(2) - 1);
+			float wi = i * s2 - li;
+			for(idx j = 0; j < y.dim[1]; j++) {
+				idx lj = j * s1;
+				idx hj = min(lj + 1, x.dimension(1) - 1);
+				float wj = j * s1 - lj;
+				for(idx k = 0; k < y.dim[0]; k++) {
+					float a = x(k, lj, li);
+					float b = x(k, hj, li);
+					float c = x(k, lj, hi);
+					float d = x(k, hj, hi);
+					tmp[k] = lerp(lerp(a, b, wj), lerp(c, d, wj), wi);
+				}
+				memmove(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
+			}
+		}
+	}
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
 	template <class derived>
 	inline void mul_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {

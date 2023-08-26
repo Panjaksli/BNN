@@ -17,7 +17,7 @@ namespace BNN {
 				.reshape(pdims());
 		}
 		void print()const override {
-			println("PixShuf\t|", "\tIn:", idim(0), idim(1), idim(2), "\tOut:", odim(0), odim(1), odim(2));
+			println("PixShuf\t|", "\tDim:", odim(0), odim(1), odim(2));
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden PixShuf" SPC idim(0) SPC idim(1) SPC idim(2) SPC r << "\n";

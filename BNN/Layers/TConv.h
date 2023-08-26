@@ -27,9 +27,8 @@ namespace BNN {
 			if(ptrain) rev_convolve({ x(),din }, dz, w, st, pa);
 		}
 		void print()const override {
-			println("TConv\t|", "\tIn:", din[0], din[1], din[2],
-				"\tOut:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1],
-				"\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1], "\tBias", bias);
+			println("TConv\t|", "\tDim:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1],
+				"\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1], "\tBias", bias, "\tAf:", af.name());
 		}
 		TConv* clone() const override { return new TConv(*this); }
 		LType type() const override { return t_TConv; }

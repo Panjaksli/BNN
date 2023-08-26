@@ -3,7 +3,7 @@
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {
-		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf
+		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf, t_Resize
 	};
 	class Layer {
 	public:
@@ -57,6 +57,8 @@ namespace BNN {
 		idx wdim(idx i) const { return wdims()[i]; }
 		idx bdim(idx i) const { return bdims()[i]; }
 		bool trainable() const { return type() == t_Conv || type() == t_TConv || type() == t_Dense; }
+		bool is_input() const { return type() == t_Input; }
+		bool is_output() const { return type() == t_Output || type() == t_OutShuf; }
 		virtual void save(std::ostream& os) const {}
 		virtual void print() const {}
 		bool compile(Layer* pnode, Layer* nnode) {

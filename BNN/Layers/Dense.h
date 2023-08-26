@@ -22,7 +22,7 @@ namespace BNN {
 			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
 		}
 		void print()const override {
-			println("Dense\t|", "\tIn:", 1, wdim(2), 1, "\tOut:", odim(0), odim(1), odim(2));
+			println("Dense\t|", "\tDim:", odim(1), "\tAf:", af.name());
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden Dense" SPC wdim(2) SPC wdim(1) SPC af.type << "\n";

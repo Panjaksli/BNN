@@ -49,7 +49,7 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 	class Optimizer {
 	public:
 		Optimizer() {}
-		Optimizer(float alpha) : alpha(alpha) {}
+		Optimizer(float alpha, float lambda, Regul reg) : alpha(alpha), lambda(lambda), reg(reg) {}
 		virtual ~Optimizer() {}
 		virtual void compile(Layer* first) {}
 		virtual void get_grad() {}
@@ -58,22 +58,23 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 		virtual void reset_cache() {}
 		virtual void reset_all() {}
 		virtual void print() { println("None"); }
-		virtual void save(std::ostream& out) { out << "Optimizer" SPC "None" << "\n"; }
+		virtual void save(std::ostream& out) { out << "Optimizer" SPC "None" SPC lambda SPC reg << "\n"; }
 		virtual idx size() { return 0; }
 		virtual Tensor* get_vw(idx i) { return nullptr; }
 		virtual Tensor* get_vb(idx i) { return nullptr; }
 		virtual Tensor* get_mw(idx i) { return nullptr; }
 		virtual Tensor* get_mb(idx i) { return nullptr; }
 		virtual Optimizer* clone() const { return new Optimizer(); }
-		float alpha = 0.001f, inv_n = 1.f;
+		float alpha = 0.001f, lambda = 0.01f, inv_n = 1.f;
+		Regul reg = L0;
 	};
 	class SGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::SGD_node)
 			SGD() {}
-		SGD(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
+		SGD(float alpha, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, inv_n);
+				n.update_grad(alpha, inv_n, lambda, reg);
 			}
 		};
 		void print() override {
@@ -81,35 +82,37 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 		}
 		void save(std::ostream& out) override {
 
-			out << "Optimizer" SPC "SGD" SPC alpha << "\n";
+			out << "Optimizer" SPC "SGD" SPC alpha SPC lambda SPC reg << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a;
-			in >> a;
-			return new SGD(a);
+			float a, l;
+			int r;
+			in >> a >> l >> r;
+			return new SGD(a, l, Regul(r));
 		}
 		virtual SGD* clone() const override { return new SGD(*this); };
 	};
 	class AGD : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::AGD_node)
 			AGD() {}
-		AGD(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
-		AGD(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
+		AGD(float alpha, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg) { build(first); }
+		AGD(float alpha, float mu, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, mu, inv_n);
+				n.update_grad(alpha, mu, inv_n, lambda, reg);
 			}
 		};
 		void print() override {
 			println("AGD", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
 		}
 		void save(std::ostream& out) override {
-			out << "Optimizer" SPC"AGD" SPC alpha SPC mu << "\n";
+			out << "Optimizer" SPC"AGD" SPC alpha SPC mu SPC lambda SPC reg << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, m;
-			in >> a >> m;
-			return new AGD(a, m);
+			float a, m, l;
+			int r;
+			in >> a >> m >> l >> r;
+			return new AGD(a, m, l, Regul(r));
 		}
 		virtual AGD* clone() const override { return new AGD(*this); };
 		float mu = 0.9f;
@@ -117,23 +120,24 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 	class NAG : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::NAG_node)
 			NAG() {}
-		NAG(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
-		NAG(float alpha, float mu, Layer* first = nullptr) : Optimizer(alpha), mu(mu) { build(first); }
+		NAG(float alpha, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg) { build(first); }
+		NAG(float alpha, float mu, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg), mu(mu) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, mu, inv_n);
+				n.update_grad(alpha, mu, inv_n, lambda, reg);
 			}
 		};
 		void print() override {
 			println("NAG", "\tRate:", alpha, "\tMu:", mu, "\tNodes:", nodes.size());
 		}
 		void save(std::ostream& out) override {
-			out << "Optimizer" SPC"NAG" SPC alpha SPC mu << "\n";
+			out << "Optimizer" SPC"NAG" SPC alpha SPC mu SPC lambda SPC reg << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, m;
-			in >> a >> m;
-			return new NAG(a, m);
+			float a, m, l;
+			int r;
+			in >> a >> m >> l >> r;
+			return new NAG(a, m, l, Regul(r));
 		}
 		virtual NAG* clone() const override { return new NAG(*this); };
 		float mu = 0.9f;
@@ -141,23 +145,24 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 	class RMSprop : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::RMS_node)
 			RMSprop() {}
-		RMSprop(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
-		RMSprop(float alpha, float b, float eps, Layer* first = nullptr) : Optimizer(alpha), beta(b), eps(eps) { build(first); }
+		RMSprop(float alpha, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg) { build(first); }
+		RMSprop(float alpha, float b, float eps, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg), beta(b), eps(eps) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, beta, eps, inv_n);
+				n.update_grad(alpha, beta, eps, inv_n, lambda, reg);
 			}
 		};
 		void print() override {
 			println("RMSprop", "\tRate:", alpha, "\tBeta:", beta, "\tEps", eps, "\tNodes:", nodes.size());
 		}
 		void save(std::ostream& out) override {
-			out << "Optimizer" SPC "RMSprop" SPC alpha SPC beta SPC eps << "\n";
+			out << "Optimizer" SPC "RMSprop" SPC alpha SPC beta SPC eps SPC lambda SPC reg << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, b, e;
-			in >> a >> b >> e;
-			return new RMSprop(a, b, e);
+			float a, b, e, l;
+			int r;
+			in >> a >> b >> e >> l >> r;
+			return new RMSprop(a, b, e, l, Regul(r));
 		}
 		virtual RMSprop* clone() const override { return new RMSprop(*this); };
 		float beta = 0.9f, eps = 1e-8f;
@@ -166,20 +171,21 @@ Tensor* get_mb(idx i) override { return nodes[i].get_mb(); }
 	class Adam : public Optimizer {
 		COMMON_OPTIM_FUNCS(GD::ADAM_node)
 			Adam() {}
-		Adam(float alpha, float b1, float b2, float eps, Layer* first = nullptr) : Optimizer(alpha), beta1(b1), beta2(b2), eps(eps) { build(first); }
-		Adam(float alpha, Layer* first = nullptr) : Optimizer(alpha) { build(first); }
+		Adam(float alpha, float b1, float b2, float eps, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg), beta1(b1), beta2(b2), eps(eps) { build(first); }
+		Adam(float alpha, float lambda = 0.01f, Regul reg = L0, Layer* first = nullptr) : Optimizer(alpha, lambda, reg) { build(first); }
 		void update_grad() override {
 			for(auto& n : nodes) {
-				n.update_grad(alpha, beta1, beta2, eps, inv_n);
+				n.update_grad(alpha, beta1, beta2, eps, inv_n, lambda, reg);
 			}
 		};
 		void save(std::ostream& out) override {
-			out << "Optimizer" SPC "Adam" SPC alpha SPC beta1 SPC beta2 SPC eps << "\n";
+			out << "Optimizer" SPC "Adam" SPC alpha SPC beta1 SPC beta2 SPC eps SPC lambda SPC reg << "\n";
 		}
 		static auto load(std::istream& in) {
-			float a, b1, b2, e;
-			in >> a >> b1 >> b2 >> e;
-			return new Adam(a, b1, b2, e);
+			float a, b1, b2, e, l;
+			int r;
+			in >> a >> b1 >> b2 >> e >> l >> r;
+			return new Adam(a, b1, b2, e, l, Regul(r));
 		}
 		void print() override {
 			println("Adam", "\tRate:", alpha, "\tBeta:", beta1, beta2, "\tEps", eps, "\tNodes:", nodes.size());

@@ -13,7 +13,7 @@ namespace BNN {
 		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
-		bool Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1,  idx batch = -1, idx nlog = -1);
+		bool Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1);
 		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16, idx steps = -1);
 		void Clear();
 		void Print() const;
@@ -28,8 +28,8 @@ namespace BNN {
 		void Set_optim(Optimizer* opt) { if(opt) { if(optimizer) delete optimizer; optimizer = opt; compiled = 0; } }
 		void Add_node(Layer* hidl) { if(hidl) { graph.push_back(hidl); compiled = false; } }
 		void Add_node(Layer* hidl, idx id) { if(hidl && id < graph.size()) { graph.insert(graph.begin() + id, hidl); compiled = false; } }
-		void Rem_node() { graph.pop_back(); compiled = false; }
-		void Rem_node(idx id) { if(id < graph.size()) { graph.erase(graph.begin() + id); compiled = false; } }
+		void Rem_node() { if(graph.size() > 0) { delete graph.back(); graph.pop_back(); compiled = false; } }
+		void Rem_node(idx id) { if(id < graph.size()) { delete(graph[id]); graph.erase(graph.begin() + id); compiled = false; } }
 
 		dim1<3> Dim_of(idx id)const { return graph[id]->odims(); }
 		idx Size_of(idx id)const { return graph[id]->osize(); }
@@ -49,6 +49,8 @@ namespace BNN {
 			return graph.front()->compute_ds(x);
 		}
 		NNet& Append(const NNet& other);
+		Layer* Back() { return graph.back(); }
+		Layer* Front() { return graph.front(); }
 		void Save(const std::string& name) const;
 		void Save() const;
 		bool Load(const std::string& name);

@@ -31,9 +31,8 @@ namespace BNN {
 		}
 
 		void print()const override {
-			println("Conv\t|", "\tIn:", din[0], din[1], din[2],
-				"\tOut:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1],
-				"\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1], "\tBias", bias);
+			println("Conv\t|", "\tDim:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1],
+				"\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1], "\tBias", bias, "\tAf:", af.name());
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden Conv" SPC din[0] SPC din[1] SPC din[2] SPC odim(0) SPC ks[0]

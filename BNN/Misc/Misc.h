@@ -11,23 +11,31 @@ namespace BNN {
 	using std::vector;
 	using std::min;
 	using std::max;
-	using std::clamp;
+	template <class T>
+	inline T clamp(const T& x, const T& _min, const T& _max) {
+		return min(max(x, _min), _max);
+	}
+	template <class T>
+	inline T lerp(const T& x, const T& y, const auto t) {
+		return (1 - t) * x + t * y;
+	}
 	using uchar = uint_fast8_t;
-	inline uint32_t xorshift32() {
-		thread_local static uint32_t x = 0x6f9f;
+	using uint = uint_fast32_t;
+	inline uint xorshift32() {
+		thread_local static uint x = 0x6f9f;
 		x ^= x << 13;
 		x ^= x >> 17;
 		x ^= x << 5;
 		return x;
 	}
-	inline uint32_t fastrand() {
-		thread_local static uint32_t x = 0x6f9f;
+	inline uint fastrand() {
+		thread_local static uint x = 0x6f9f;
 		x = (214013U * x + 2531011U);
 		return x;
 	}
 
 	inline float rafl() {
-		uint32_t x = 0x3f800000 | (xorshift32() & 0x007FFFFF);
+		uint x = 0x3f800000 | (xorshift32() & 0x007FFFFF);
 		return *(float*)&x - 1.f;
 	}
 

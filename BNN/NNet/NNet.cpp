@@ -87,7 +87,7 @@ namespace BNN {
 	bool NNet::Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog, idx threads, idx steps) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		if(batch < 0) batch = x0.dimension(3);
+		if(batch < 0 || batch > x0.dimension(3)) batch = x0.dimension(3);
 		if(batch < threads) threads = batch;
 		if(nlog <= 0) nlog = epochs;
 		if(steps <= 0) steps = 1;
@@ -140,9 +140,9 @@ namespace BNN {
 	bool NNet::Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog) {
 		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
 		if(rate > 0) optimizer->alpha = rate;
-		if(batch < 0) batch = x0.dimension(3);
+		if(batch < 0 || batch > x0.dimension(3)) batch = x0.dimension(3);
 		if(nlog < 0) nlog = epochs;
-		optimizer->inv_n = 1.f / x0.dimension(3);
+		optimizer->inv_n = 1.f / batch;
 		optimizer->reset_all();
 		double t = timer();
 		vector<int> indices = shuffled(x0.dimension(3));
