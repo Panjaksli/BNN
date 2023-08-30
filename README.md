@@ -38,4 +38,9 @@ Loss-wise relu is the best, cubl slightly outperforms swish.
 ### Image quality:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/e066678c-629e-4c8d-99d4-abff40ee6de3)
 Quality-wise cubl and swish provide smoother upscaled image than relu.
+## Custom pre-trained CNN for image upscaling
+This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than simple upscaling algorithm (bicubic, bilinear).
+### Comparison: bicubic vs model vs reference
+![image](https://github.com/Panjaksli/BNN/assets/82727531/fb3a9592-5987-4eb9-bde0-dccecb1c459e)
+
 
