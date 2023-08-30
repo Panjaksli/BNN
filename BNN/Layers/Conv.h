@@ -60,8 +60,8 @@ namespace BNN {
 		LType type() const override { return t_Conv; }
 	private:
 		void _init() {
-			if(bias)b = b.random() * 0.2f - 0.1f;
-			w = w.random() * 0.2f - 0.1f;
+			if(bias)b = b.random() * 0.4f - 0.2f;
+			w = w.random() * 0.4f - 0.2f;
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
