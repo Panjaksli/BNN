@@ -43,6 +43,10 @@ This repository comes with custom pre-trained model for high quality image upsca
 ### Comparison: bicubic vs model vs reference
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/fb3a9592-5987-4eb9-bde0-dccecb1c459e)
 ### How does it work ?
-The model is trained on the error of reference image and lowres image upscaled with bicubic interpolation (dy = y - upscaled(x)).\
-This error is then added to the upscaled image during inference (y = upscaled(x) + dy = upscaled(x) - upscaled(x) + y = y), thus producing higher quality output. 
+The model is trained on the error of reference image and low res image upscaled with bicubic interpolation:\
+d(x) = f(x) - g(x),\
+where: d(x) is error function, f(x) is full resolution image and g(x) is an approximation of f(x).\
+This error is then added to the upscaled image during inference:\
+f(x) = g(x) + d(x) = g(x) - g(x) + f(x) = f(x).\
+This results in reconstruction of original image f(x).
 
