@@ -81,6 +81,7 @@ namespace BNN {
 		vector<Layer*> graph;
 		Optimizer* optimizer = nullptr;
 		std::string name = "Net";
+		float best_cost = 1e6f;
 		bool compiled = false;
 	};
 }

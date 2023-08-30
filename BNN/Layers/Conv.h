@@ -25,7 +25,7 @@ namespace BNN {
 		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
-			if(bias)db += dz.sum(dim1<2>{1,2}).reshape(b.dimensions());
+			if(bias)db += dz.sum(dim1<2>{1,2});
 			acc_convolve(dw, x().reshape(din), dy, 1, pa);
 			if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
 		}

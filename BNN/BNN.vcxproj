@@ -226,6 +226,7 @@
     <ClInclude Include="Layers\Conv.h" />
     <ClInclude Include="Layers\Dense.h" />
     <ClInclude Include="Misc\Drafts.h" />
+    <ClInclude Include="Misc\Eigen_math.h" />
     <ClInclude Include="Misc\Eigen_util.h" />
     <ClInclude Include="NNet\GD_nodes.h" />
     <ClInclude Include="Layers\Dropout.h" />

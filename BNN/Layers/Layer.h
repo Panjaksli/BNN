@@ -1,5 +1,5 @@
 #pragma once
-#include "../Misc/Eigen_util.h"
+#include "../Misc/Eigen_math.h"
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {

@@ -13,7 +13,7 @@ namespace BNN {
 		}
 		float error(const Tensor& y0) override {
 			float cost = 0;
-			cost = fsca(y().binaryExpr(y0, ef.fx()).mean()).coeff();
+			cost = fsca(y().binaryExpr(y0, &Efun::mae::fx).mean()).coeff();
 			x() = y().binaryExpr(y0, ef.dx()).reshape(pdims());
 			return cost;
 		}

@@ -19,7 +19,7 @@ namespace BNN {
 		}
 		float error(const Tensor& y0) override {
 			float cost = 0;
-			cost = fsca(y().binaryExpr(y0, ef.fx()).mean()).coeff();
+			cost = fsca(y().binaryExpr(y0, &Efun::mae::fx).mean()).coeff();
 			x() = y().binaryExpr(y0, ef.dx())
 				.reshape(dim1<5>{odim(0), r, idim(1), r, idim(2)})
 				.shuffle(dim1<5>{0, 3, 1, 2, 4})

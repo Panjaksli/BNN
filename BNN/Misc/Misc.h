@@ -19,10 +19,36 @@ namespace BNN {
 	inline T lerp(const T& x, const T& y, const auto t) {
 		return (1 - t) * x + t * y;
 	}
+	template <class T>
+	T cerp(T* p, T x) {
+		return p[1] + 0.5 * x * (p[2] - p[0] + x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] + x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
+	}
+	template <class T>
+	T bicerp(T* p, T x, T y) {
+		T tmp[4];
+		tmp[0] = cerp(p, x);
+		tmp[1] = cerp(p + 4, x);
+		tmp[2] = cerp(p + 8, x);
+		tmp[3] = cerp(p + 12, x);
+		return cerp(tmp, y);
+	}
+	enum Interpol {
+		Nearest,
+		Linear,
+		Cubic
+	};
+	inline const char* to_cstr(Interpol i) {
+		switch(i) {
+			case Nearest: return "Nearest";
+			case Linear: return "Linear";
+			case Cubic: return "Cubic";
+			default: return "Null";
+		}
+	}
 	using uchar = uint_fast8_t;
 	using uint = uint_fast32_t;
 	inline uint xorshift32() {
-		thread_local static uint x = 0x6f9f;
+		thread_local static uint x = 0x28659f;
 		x ^= x << 13;
 		x ^= x >> 17;
 		x ^= x << 5;

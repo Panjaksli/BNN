@@ -37,6 +37,5 @@ namespace BNN {
 		Input* clone() const override { return new Input(*this); }
 		LType type() const override { return t_Input; }
 	private:
-		//const Tensor& predict() override { return next->predict(); }
 	};
 }

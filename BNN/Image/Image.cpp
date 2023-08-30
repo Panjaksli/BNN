@@ -7,10 +7,12 @@
 #include "stb_image_write.h"
 #include "Image.h"
 namespace BNN {
-	Tensor Image::tensor_rgb() const {
-		Tensor res(n, w, h);
-		for(idx i = 0; i < h; i++) {
-			for(idx j = 0; j < w; j++) {
+	Tensor Image::tensor_rgb(bool even) const {
+		idx tw = w - even * (w % 2);
+		idx th = h - even * (h % 2);
+		Tensor res(n, tw, th);
+		for(idx i = 0; i < th; i++) {
+			for(idx j = 0; j < tw; j++) {
 				for(idx k = 0; k < n; k++) {
 					res(k, j, i) = operator()(i, j, k) / 255.f;
 				}
@@ -18,11 +20,13 @@ namespace BNN {
 		}
 		return res;
 	}
-	Tensor Image::tensor_yuv() const {
+	Tensor Image::tensor_yuv(bool even) const {
+		idx tw = w - even * (w % 2);
+		idx th = h - even * (h % 2);
 		float rgb[16]{};
-		Tensor res(n, w, h);
-		for(idx i = 0; i < h; i++) {
-			for(idx j = 0; j < w; j++) {
+		Tensor res(n, tw, th);
+		for(idx i = 0; i < th; i++) {
+			for(idx j = 0; j < tw; j++) {
 				if(n < 3) {
 					res(0, j, i) = operator()(i, j, 0) / 255.f;
 				}
@@ -61,30 +65,67 @@ namespace BNN {
 		}
 		return false;
 	}
-	Image& Image::resize(int _w, int _h) {
+	Image& Image::resize(int _w, int _h, Interpol filter) {
 		Image tmp(n, _w, _h);
-		float s1 = tmp.w > 1 ? (w - 1) / (tmp.w - 1.f) : 0;
-		float s2 = tmp.h > 1 ? (h - 1) / (tmp.h - 1.f) : 0;
-		for(idx i = 0; i < tmp.h; i++) {
-			idx li = i * s2;
-			idx hi = min(li + 1, h - 1);
-			float wi = i * s2 - li;
-			for(idx j = 0; j < tmp.w; j++) {
-				idx lj = j * s1;
-				idx hj = min(lj + 1, w - 1);
-				float wj = j * s1 - lj;
-				for(idx k = 0; k < n; k++) {
-					float a = operator()(li, lj, k);
-					float b = operator()(li, hj, k);
-					float c = operator()(hi, lj, k);
-					float d = operator()(hi, hj, k);
-					tmp(i,j,k) = (1.f - wi) * (a * (1.f - wj) + b * wj) + wi * (c * (1.f - wj) + d * wj);
+		float s1 = tmp.w > 0 ? float(w) / (tmp.w) : 0;
+		float s2 = tmp.h > 0 ? float(h) / (tmp.h) : 0;
+		if(filter == Nearest) {
+			for(idx i = 0; i < tmp.h; i++) {
+				idx li = (i + 0.5f) * s2;
+				for(idx j = 0; j < tmp.w; j++) {
+					idx lj = (j + 0.5f) * s1;
+					for(idx k = 0; k < n; k++) {
+						tmp(i, j, k) = operator()(li, lj, k);
+					}
+				}
+			}
+		}
+		else if(filter == Linear) {
+			for(idx i = 0; i < tmp.h; i++) {
+				float fi = fmaxf((i + 0.5f) * s2 - 0.5f, 0);
+				idx li = fi;
+				idx hi = min(li + 1, h - 1);
+				float wi = fi - li;
+				for(idx j = 0; j < tmp.w; j++) {
+					float fj = fmaxf((j + 0.5f) * s1 - 0.5f, 0);
+					idx lj = fj;
+					idx hj = min(lj + 1, w - 1);
+					float wj = fj - lj;
+					for(idx k = 0; k < n; k++) {
+						float a = operator()(li, lj, k);
+						float b = operator()(li, hj, k);
+						float c = operator()(hi, lj, k);
+						float d = operator()(hi, hj, k);
+						tmp(i, j, k) = lerp(lerp(a, b, wj), lerp(c, d, wj), wi);
+					}
+				}
+			}
+		}
+		else if(filter == Cubic) {
+			for(idx i = 0; i < tmp.h; i++) {
+				float y = fmaxf((i + 0.5f) * s2 - 0.5f, 0);
+				int y0 = y;
+				float yd = y - y0;
+				for(idx j = 0; j < tmp.w; j++) {
+					float x = fmaxf((j + 0.5f) * s1 - 0.5f, 0);
+					int x0 = x;
+					float xd = x - x0;
+					for(idx k = 0; k < n; k++) {
+						float p[16];
+						for(int ii = 0; ii < 4; ii++) {
+							for(int jj = 0; jj < 4; jj++) {
+								p[ii * 4 + jj] = operator()(clamp(y0 + ii - 1, 0, h - 1), clamp(x0 + jj - 1, 0, w - 1), k);
+							}
+						}
+						tmp(i, j, k) = clamp(bicerp(p, xd, yd), 0.f, 255.f);
+					}
 				}
 			}
 		}
 		swap(*this, tmp);
 		return *this;
 	}
+
 	Image& Image::rotate() {
 		Image tmp(n, h, w);
 		for(idx i = 0; i < h; i++) {

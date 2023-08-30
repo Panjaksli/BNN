@@ -104,7 +104,7 @@ namespace BNN {
 			cost = 0;
 			vector<NNet> nets(threads, net);
 			vector<int> indices = shuffled(x0.dimension(3));
-#pragma omp parallel for shared(x0,y0)
+#pragma omp parallel for shared(x0,y0,nets,indices)
 			for(idx i = 0; i < threads; i++) {
 				idx off = i * batch_sz;
 				float cst = nets[i].train_job(x0, y0, indices, off, off + batch_sz, epochs, nlog, i, step * epochs, i == 0);
@@ -133,7 +133,8 @@ namespace BNN {
 			}
 			printr("Step:", step + 1, "Cost:", cost * mult, "Time:", timer(t), "                        ");
 		}
-		println("Trained Network:", name, "Cost:", cost * mult, "Time:", timer(t), "                        ");
+		best_cost = fminf(cost * mult, best_cost);
+		println("Trained Network:", name, "Cost:", cost * mult, "Best:", best_cost, "Time:", timer(t), "                        ");
 		*this = net;
 		return true;
 	}
@@ -151,7 +152,8 @@ namespace BNN {
 			println("Failed training the network !!!");
 			return false;
 		}
-		println("Trained Network:", name, "Cost:", cost, "Time:", timer(t), "           ");
+		best_cost = fminf(cost, best_cost);
+		println("Trained Network:", name, "Cost:", cost, "Best:", best_cost, "Time:", timer(t), "           ");
 		return true;
 	}
 
@@ -188,6 +190,7 @@ namespace BNN {
 		std::ofstream out(name + "/data.bin", std::ios::binary | std::ios::out);
 		graph.front()->save(out);
 		optimizer->save(out);
+		out << "Cost" SPC best_cost << "\n";
 	}
 	void NNet::Save() const { Save(name); }
 	bool NNet::Load(const std::string& folder) {
@@ -204,17 +207,19 @@ namespace BNN {
 				graph.push_back(Layer_load(in));
 			else if(token == "Optimizer")
 				optimizer = Optimizer_load(in);
+			else if(token == "Cost")
+				in >> best_cost;
 			else break;
 		}
 		name = folder;
-		println("Message:  Loaded Network:", name);
+		println("Message:  Loaded Network:", name, "Cost:", best_cost);
 		Compile(1);
 		return true;
 	}
 	bool NNet::Load() { return Load(name); }
 	void NNet::Print() const {
 		println("------------------------------------------------------------------------------------------------");
-		std::cout << "Network\t|\t"; println(name);
+		std::cout << "Network\t|\t"; println(name, "\tCost:", best_cost);
 		for(const auto& g : graph) g->print();
 		std::cout << ("Optimiz\t|\t"); if(optimizer) { optimizer->print(); }
 		println("------------------------------------------------------------------------------------------------");

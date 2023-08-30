@@ -1,5 +1,6 @@
 #pragma once
 #include "../Misc/Eigen_util.h"
+#include "../Misc/Afun.h"
 namespace BNN {
 	class Image {
 	public:
@@ -19,8 +20,9 @@ namespace BNN {
 			else println("Image was not found:", name);
 		}
 		~Image() { if(data) free(data); }
-		Tensor tensor_rgb() const;
-		Tensor tensor_yuv() const;
+		Tensor tensor_rgb(bool even = 0) const;
+		Tensor tensor_yuv(bool even = 0) const;
+		inline operator Tensor() const { return tensor_rgb(1);}
 		Image(const Tensor& in);
 		Image(const Image& cpy) : data((uchar*)malloc(cpy.size())), n(cpy.n), w(cpy.w), h(cpy.h) {
 			for(idx i = 0; i < w * h * n; i++)
@@ -31,7 +33,7 @@ namespace BNN {
 			return *this;
 		}
 		Image& rotate();
-		Image& resize(int w, int h);
+		Image& resize(int w, int h, Interpol filter = Cubic);
 		//h w d
 		inline const uchar& operator()(idx i, idx j, idx k) const {
 			return data[(i * w + j) * n + k];
