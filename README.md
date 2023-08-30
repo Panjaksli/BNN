@@ -45,7 +45,7 @@ This repository comes with custom pre-trained model for high quality image upsca
 ### How does it work ?
 The model is trained on the error of reference image and low res image upscaled with bicubic interpolation:\
 d(x) = f(x) - g(x),\
-where: d(x) is error function, f(x) is full resolution image and g(x) is an approximation of f(x). 
+where: d(x) is error function, f(x) is full resolution image and g(x) is an approximation of f(x). \
 This error is then added to the upscaled image during inference:\
 f(x) = g(x) + d(x) = g(x) - g(x) + f(x) = f(x).\
 This results in reconstruction of original image f(x).
