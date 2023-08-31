@@ -42,6 +42,8 @@ Quality-wise cubl and swish provide smoother upscaled image than relu.
 This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than any simple upscaling algorithm (bicubic, bilinear).
 ### Comparison: bicubic vs model vs reference
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/fb3a9592-5987-4eb9-bde0-dccecb1c459e)
+### Lowres anime vs upscale
+![image](https://github.com/Panjaksli/BNN/assets/82727531/388cda89-ed14-4f15-b1ae-efc009cd7a42)
 ### How does it work ?
 The model is trained on the error of reference image and low res image upscaled with bicubic interpolation:\
 d(x) = f(x) - g(x),\
