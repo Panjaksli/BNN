@@ -3,7 +3,7 @@ using namespace BNN;
 
 //rgb upscaling
 int main() {
-#if 0
+#if 1
 	//Inference code
 	NNet net("Upscaling_net");
 	std::string inp, outp;
@@ -21,7 +21,7 @@ int main() {
 			y.chip(i, 0) = net.Compute_DS(x.chip(i, 0).reshape(dim1<3>{1, x.dimension(1), x.dimension(2)})).chip(i, 0);
 		Image(y).save(outp + ".png");*/
 		//DIFF MODEL
-		Tensor x = Image(inp, 3, 1).tensor_rgb();
+		Tensor x = Image(inp, 3, 1).tensor_rgb(true);
 		Image(net.Compute_DS(x) + resize(x, 2, 2)).save(outp + ".png");
 		//Cubic
 		//Image(inp, 3, 1).resize_cubic(960,720).save(outp + ".png");
@@ -33,7 +33,7 @@ int main() {
 	std::string parent = "Upscaler/";
 	//Input data
 	std::string in_folder = "Downscaler/";
-	std::string netname = parent + "ups_c5x32_c3x32x3_c3_ps2_dy_cu";
+	std::string netname = parent + "ups_c5x32_c3x32x2_c3_ps2_dy_cu";
 	Tenarr x(3, 240, 160, train_set);
 #pragma omp parallel for
 	for(idx i = 0; i < train_set; i++)

@@ -118,6 +118,7 @@ namespace BNN {
 				println("Failed training the network !!!");
 				return false;
 			}
+			cost *= mult;
 			net.Zero();
 			for(const auto& n : nets) {
 				for(idx i = 1; i < net.graph.size() - 1; i++) {
@@ -131,10 +132,10 @@ namespace BNN {
 					if(net.optimizer->get_mb(i)) *net.optimizer->get_mb(i) += mult * (*n.optimizer->get_mb(i));
 				}
 			}
-			printr("Step:", step + 1, "Cost:", cost * mult, "Time:", timer(t), "                        ");
+			best_cost = fminf(cost, best_cost);
+			printr("Step:", step + 1, "Cost:", cost, "Time:", timer(t), "                    ");
 		}
-		best_cost = fminf(cost * mult, best_cost);
-		println("Trained Network:", name, "Cost:", cost * mult, "Best:", best_cost, "Time:", timer(t), "                        ");
+		println("Trained Network:", name, "Cost:", cost, "Best:", best_cost, "Time:", timer(t), "                ");
 		*this = net;
 		return true;
 	}
