@@ -1,7 +1,7 @@
 # BNN
 Basic Neural Net -  Neural network built on top of Eigen/Tensor library, offering support for various layers and parallel CPU learning. The library delivers exceptional performance in spatial convolutions, achieving up to 100x performance of Convolve method from Eigen/Tensor along with much better CPU clock scaling
 ## What is this library ?
-This is an Eigen based sequential neural network library with goal of implementing various layer types, activation functions and optimizers whilst achieving superior perfomance in CPU training **and I really mean superior**.
+This is an Eigen based sequential neural network library with goal of implementing various layer types, activation functions and optimizers whilst achieving superior perfomance in CPU training **and I really mean superior**. Almost everything is implemented from scratch !
 ## Performance optimizations
 Computations use the bare minimum of temporaries and leverage column major layout of tensors as much as possible (especially the custom spatial convolution algorithm). The number of virtual calls is kept to the absolute minimum too.The library vectorizes quite well and can even leverage multiple CPU cores for learning and inference.
 ## Features
@@ -39,9 +39,11 @@ Loss-wise relu is the best, cubl slightly outperforms swish.
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/e066678c-629e-4c8d-99d4-abff40ee6de3)
 Quality-wise cubl and swish provide smoother upscaled image than relu.
 ## Custom pre-trained CNN for image upscaling
-This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than any simple upscaling algorithm (bicubic, bilinear).
+This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than any simple upscaling algorithm (bicubic, bilinear). And even though the network was trained only on real-life images, it performs on upscaling anime art too !
 ### Comparison: bicubic vs model vs reference
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/fb3a9592-5987-4eb9-bde0-dccecb1c459e)
+### Upscaling anime art
+![image](https://github.com/Panjaksli/BNN/assets/82727531/718568a6-111a-4436-870b-c206874185eb)
 ### How does it work ?
 The model is trained on the error of reference image and low res image upscaled with bicubic interpolation:\
 d(x) = f(x) - g(x),\
