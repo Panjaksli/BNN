@@ -1,7 +1,7 @@
 # BNN
 Basic Neural Net -  Neural network built on top of Eigen/Tensor library, offering support for various layers and parallel CPU learning. The library delivers exceptional performance in spatial convolutions, achieving up to 100x performance of Convolve method from Eigen/Tensor along with much better CPU clock scaling
 ## What is this library ?
-This is an Eigen based sequential neural network library with goal of implementing various layer types, activation functions and optimizers whilst achieving superior perfomance in CPU training **and I really mean superior**.
+This is an Eigen based sequential neural network library with goal of implementing various layer types, activation functions and optimizers whilst achieving superior perfomance in CPU training **and I really mean superior**. Almost everything is implemented from scratch !
 ## Performance optimizations
 Computations use the bare minimum of temporaries and leverage column major layout of tensors as much as possible (especially the custom spatial convolution algorithm). The number of virtual calls is kept to the absolute minimum too.The library vectorizes quite well and can even leverage multiple CPU cores for learning and inference.
 ## Features
