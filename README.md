@@ -39,11 +39,11 @@ Loss-wise relu is the best, cubl slightly outperforms swish.
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/e066678c-629e-4c8d-99d4-abff40ee6de3)
 Quality-wise cubl and swish provide smoother upscaled image than relu.
 ## Custom pre-trained CNN for image upscaling
-This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than any simple upscaling algorithm (bicubic, bilinear).
+This repository comes with custom pre-trained model for high quality image upscaling, that achieves far better results than any simple upscaling algorithm (bicubic, bilinear). And even though the network was trained only on real-life images, it performs on upscaling anime art too !
 ### Comparison: bicubic vs model vs reference
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/fb3a9592-5987-4eb9-bde0-dccecb1c459e)
-### Lowres anime vs upscale
-![image](https://github.com/Panjaksli/BNN/assets/82727531/388cda89-ed14-4f15-b1ae-efc009cd7a42)
+### Upscaling anime art
+![image](https://github.com/Panjaksli/BNN/assets/82727531/718568a6-111a-4436-870b-c206874185eb)
 ### How does it work ?
 The model is trained on the error of reference image and low res image upscaled with bicubic interpolation:\
 d(x) = f(x) - g(x),\
