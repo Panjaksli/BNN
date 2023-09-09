@@ -40,7 +40,7 @@ namespace BNN {
 		Tensor compute_ds(const Tensor& x) const override {
 			return next->compute_ds(x.reshape(dim1<5>{x.dimension(0) / (r * r), r, r, x.dimension(1), x.dimension(2)})
 				.shuffle(dim1<5>{0, 2, 3, 1, 4})
-				.reshape(odims()));
+				.reshape(dim1<3>{x.dimension(0) / (r * r), r* x.dimension(1), r* x.dimension(2)}));
 		}
 		const Tensor& predict(const Tensor& x) override {
 			y() = x.reshape(dim1<5>{odim(0), r, r, idim(1), idim(2)})

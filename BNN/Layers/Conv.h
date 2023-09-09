@@ -20,15 +20,26 @@ namespace BNN {
 		void init() override { _init(); }
 		void derivative(bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
-			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
-			if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
+			if(st[0] > 1 || st[1] > 1) {
+				auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+				if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
+			}
+			else {
+				if(ptrain) rev_convolve({ x(),din }, dz, w, 1, ks - pa - 1);
+			}
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
-			auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
-			if(bias)db += dz.sum(dim1<2>{1,2});
-			acc_convolve(dw, x().reshape(din), dy, 1, pa);
-			if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
+			if(bias)db += dz.sum(dim1<2>{1, 2});
+			if(st[0] > 1 || st[1] > 1) {
+				auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+				acc_convolve(dw, x(), dy, 1, pa);
+				if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
+			}
+			else {
+				acc_convolve(dw, x(), dz, 1, pa);
+				if(ptrain) rev_convolve({ x(),din }, dz, w, 1, ks - pa - 1);
+			}
 		}
 
 		void print()const override {
@@ -65,8 +76,8 @@ namespace BNN {
 			squared_init(w, 0.2f);
 		}
 		Tensor compute(const Tensor& x) const override {
-			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
-			else return next->compute(conv(x.reshape(din), w, st, pa).unaryExpr(af.fx()));
+			if(bias)return next->compute((conv(x, w, st, pa) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));
+			else return next->compute(conv(x, w, st, pa).unaryExpr(af.fx()));
 		}
 		Tensor compute_ds(const Tensor& x) const override {
 			if(bias) return next->compute_ds((conv(x, w, st, pa)
@@ -75,13 +86,13 @@ namespace BNN {
 			else return next->compute_ds(conv(x, w, st, pa).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
-			convolve(dz, x().reshape(din), w, st, pa);
+			convolve(dz, x(), w, st, pa);
 			if(bias)dz = dz + b.broadcast(dim1<3>{1, odim(1), odim(2)});
 			y() = dz.unaryExpr(af.fx());
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
-			convolve(dz, x.reshape(din), w, st, pa);
+			convolve(dz, x, w, st, pa);
 			if(bias)dz = dz + b.broadcast(dim1<3>{1, odim(1), odim(2)});
 			return next->predict(y() = dz.unaryExpr(af.fx()));
 		}

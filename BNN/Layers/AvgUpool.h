@@ -42,7 +42,7 @@ namespace BNN {
 			w.setConstant(float(st[0] * st[1]) / w.size());
 		}
 		Tensor compute(const Tensor& x) const override {
-			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] });
+			auto ix = x.inflate(dim1<3>{ 1, st[0], st[1] });
 			return next->compute(aconv(ix, w.constant(float(st[0] * st[1]) / w.size()), 1, ks - pa - 1));
 		}
 		Tensor compute_ds(const Tensor& x) const override {
@@ -51,14 +51,20 @@ namespace BNN {
 		}
 		const Tensor& predict() override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
-			auto ix = x().reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
-			all_convolve(y(), ix, w, 1, ks - pa - 1);
+			if(st[0] > 1 || st[1] > 1) {
+				auto ix = x().inflate(dim1<3>{ 1, st[0], st[1] });
+				all_convolve(y(), ix, w, 1, ks - pa - 1);
+			}
+			else all_convolve(y(), x(), w, 1, ks - pa - 1);
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
-			auto ix = x.reshape(din).inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
-			all_convolve(y(), ix, w, 1, ks - pa - 1);
+			if(st[0] > 1 || st[1] > 1) {
+				auto ix = x.inflate(dim1<3>{ 1, st[0], st[1] }); //ix = i + (i - 1) * (s - 1)
+				all_convolve(y(), ix, w, 1, ks - pa - 1);
+			}
+			else all_convolve(y(), x, w, 1, ks - pa - 1);
 			return next->predict(y());
 		}
 		Tensor w;

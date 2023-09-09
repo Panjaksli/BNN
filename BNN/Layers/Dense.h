@@ -13,16 +13,16 @@ namespace BNN {
 		void init() override { _init(); }
 		void derivative(bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
-			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
+			if(ptrain) mul_r(x(), w, dz, { 0,0 });
 		}
 		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			db += dz;
-			acc_mul(dw, dz, x().reshape(dim1<3>{ 1, 1, wdim(2) }), { 1,0 });
-			if(ptrain) mul_r(x().reshape(dim1<3>{ 1, wdim(2), 1 }), w, dz, { 0,0 });
+			acc_mul(dw, dz, x(), { 1,0 });
+			if(ptrain) mul_r(x(), w, dz, { 0,0 });
 		}
 		void print()const override {
-			println("Dense\t|", "\tDim:", odim(1), "\tAf:", af.name());
+			println("Dense\t|", "\tDim:", 1, 1, odim(1), "\tAf:", af.name());
 		}
 		void save(std::ostream& out)const override {
 			out << "Hidden Dense" SPC wdim(2) SPC wdim(1) SPC af.type << "\n";
@@ -52,19 +52,19 @@ namespace BNN {
 			squared_init(w, 0.2f);
 		}
 		Tensor compute(const Tensor& x) const override {
-			return next->compute(fma(w, x.reshape(dim1<3>{ 1, wdim(2), 1 }), b).unaryExpr(af.fx()));
+			return next->compute(fma(w, x, b).unaryExpr(af.fx()));
 		}
 		//this function exists, but should not be used... 
 		Tensor compute_ds(const Tensor& x) const override {
-			return next->compute_ds(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x.reshape(dim1<3>{1, x.size(), 1}), b).unaryExpr(af.fx()));
+			return next->compute_ds(fma(w.broadcast(dim1<3>{1, 1, x.size() / wdim(2)}), x, b).unaryExpr(af.fx()));
 		}
 		const Tensor& predict() override {
-			fma_r(dz, w, x().reshape(dim1<3>{ 1, wdim(2), 1 }), b);
+			fma_r(dz, w, x(), b);
 			y() = dz.unaryExpr(af.fx());
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
-			fma_r(dz, w, x.reshape(dim1<3>{ 1, wdim(2), 1 }), b);
+			fma_r(dz, w, x, b);
 			return next->predict(y() = dz.unaryExpr(af.fx()));
 		}
 		Tensor dz, b;

@@ -1,5 +1,58 @@
 #if 1
-
+using Eigen::TensorMap;
+using Eigen::TensorRef;
+struct Transform {
+	Transform(Tensor& data) : data(data), dim(data.dimensions()) {
+		compute_dim();
+	}
+	Transform(Tensor& data, shp3 dim, shp3 dil, shp3 pad) : data(data), dim(dim), dil(dil), pad(pad) {
+		compute_dim();
+	}
+	const float& operator() (idx i, idx j, idx k)const {
+		if(i % dil[0] == 0) {
+			return data.data()[i + j * dim[0] + k * dim[0] * dim[1]];
+		}
+		else return none;
+	}
+	float& operator() (idx i, idx j, idx k) {
+		if() {
+			return data.data()[i + j * dim[0] + k * dim[0] * dim[1]];
+		}
+		else return none;
+	}
+	inline void compute_dim() {
+		for(int i = 0; i < 3; i++)
+			rdim[i] = dim[i] * dil[i] + 2 * pad[i] - 1;
+	}
+	Tensor& data;
+	shp3 rdim, dim, dil = dim1<3>{ 1,1,1 }, pad = dim1<3>{ 0,0,0 };
+	float none = 0.f;
+};
+void pp1(Tensor& x, const Tensor& y, const Tensor& z) {
+	for(int i = 0; i < x.size(); i++) {
+		x(i, 0, 0) = y(i, 0, 0) * z(i, 0, 0);
+	}
+}
+void pp2(Tensor& x, Reshape y, Reshape z) {
+	for(int i = 0; i < x.size(); i++) {
+		x(i, 0, 0) = y(i, 0, 0) * z(i, 0, 0);
+	}
+}
+int main() {
+	Tensor x(1000000, 1, 1);
+	Tensor y(100, 100, 100);
+	Tensor z(100, 100, 100);
+	y.setRandom();
+	z.setRandom();
+	double t = 0;
+	auto yr = y.reshape(dim1<3>{x.size(), 1, 1});
+	auto zr = z.reshape(dim1<3>{x.size(), 1, 1});
+	t = timer();
+	pp1(x, yr, zr);
+	println(timer(t));
+	t = timer();
+	pp2(x, { y ,x.dimensions() }, { z ,x.dimensions() });
+	println(timer(t));
 inline float sum(__m256 x) {
 	__m256 y = x + _mm256_permute_ps(x, 0b00011011); // 41 32 23 14
 	__m256 z = y + _mm256_permute_ps(y, 0b01000001);

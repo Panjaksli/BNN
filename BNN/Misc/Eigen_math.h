@@ -108,6 +108,27 @@ namespace BNN {
 		}
 	}
 	template <int cache = 4096>
+	inline void rev_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, b.dimension(1) - m - 1, b.dimension(2) - l - 1);
+						}
+					}
+				}
+				memcpy(&c(0, p, o), tmp, ich * 4);
+			}
+		}
+	}
+	template <int cache = 4096>
 	inline void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		float tmp[cache];

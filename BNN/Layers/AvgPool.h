@@ -17,9 +17,12 @@ namespace BNN {
 		}
 		void derivative(bool ptrain) override {
 			w.setConstant(float(st[0] * st[1]) / w.size());
-			auto dy = y().inflate(dim1<3>{ 1, st[0], st[1] });
-			//much faster than pooling...
-			if(ptrain) all_convolve({ x(), din }, dy, w, 1, ks - pa - 1);
+			//Using convolution cus it's faster than pooling in Eigen
+			if(st[0] > 1 || st[1] > 1) {
+				auto dy = y().inflate(dim1<3>{ 1, st[0], st[1] });
+				if(ptrain) all_convolve({ x(), din }, dy, w, 1, ks - pa - 1);
+			}
+			else if(ptrain) all_convolve({ x(), din }, y(), w, 1, ks - pa - 1);
 		}
 		void print()const override {
 			println("AvgPl\t|", "\tDim:", odim(0), odim(1), odim(2), "\tKernel:", ks[0], ks[1], "\tStride:", st[0], st[1], "\tPad:", pa[0], pa[1]);
@@ -44,19 +47,19 @@ namespace BNN {
 			w.setConstant(1.f / w.size());
 		}
 		Tensor compute(const Tensor& x) const override {
-			return next->compute(aconv(x.reshape(din), w.constant(1.f / w.size()), st, pa));
+			return next->compute(aconv(x, w.constant(1.f / w.size()), st, pa));
 		}
 		Tensor compute_ds(const Tensor& x) const override {
 			return next->compute_ds(aconv(x, w.constant(1.f / w.size()), st, pa));
 		}
 		const Tensor& predict() override {
 			w.setConstant(1.f / w.size());
-			all_convolve(y(), x().reshape(din), w, st, pa);
+			all_convolve(y(), x(), w, st, pa);
 			return next->predict();
 		}
 		const Tensor& predict(const Tensor& x) override {
 			w.setConstant(1.f / w.size());
-			all_convolve(y(), x.reshape(din), w, st, pa);
+			all_convolve(y(), x, w, st, pa);
 			return next->predict(y());
 		}
 		Tensor w;

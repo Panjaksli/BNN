@@ -29,7 +29,7 @@ int main() {
 		std::string parent = "Upscaler/";
 		//Input data
 		std::string in_folder = "Downscaler/";
-		std::string netname = parent + "c3x32x4";
+		std::string netname = parent + "c5c3x64_c3x32x2";
 		Tenarr x(3, 240, 160, train_set);
 	#pragma omp parallel for
 		for(idx i = 0; i < train_set; i++)
@@ -48,7 +48,7 @@ int main() {
 			z.chip(i, 3) = Image(parent + test_folder + std::to_string(i), 3).tensor_rgb();
 		/*for(idx i = 0; i < test_set; i++)
 		Image(10.f * (Image(parent + "Test_ref/" + std::to_string(i), 3).tensor_rgb() - resize(z.chip(i, 3), 2, 2) ).abs()).save(parent + "Test_dy/" + std::to_string(i) + ".png");*/
-	#if 1
+	#if 0
 		//hidden layers
 		vector<Layer*> top;
 		top.push_back(new Input(shp3(3, 240, 160)));
@@ -69,7 +69,7 @@ int main() {
 	#endif
 		for(idx i = 0; i < 100; i++) {
 	
-			if(!net.Train_parallel(x, y, 30, 0.001, 16, 100, 16, 5)) break;
+			if(!net.Train_parallel(x, y, 30, 0.001, 32, 100, 16, 5)) break;
 			net.Save();
 			for(idx j = 0; j < 10; j++)
 				Image(net.Compute(z.chip(j, 3)).abs() * 10.f).save(netname + "/" + std::to_string(j) + ".png");
