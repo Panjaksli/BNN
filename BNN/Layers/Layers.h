@@ -8,6 +8,7 @@
 #include "AvgUpool.h"
 #include "Dense.h"
 #include "TConv.h"
+#include "SConv.h"
 #include "Dropout.h"
 #include "PixShuf.h"
 #include "Resize.h"
@@ -15,6 +16,7 @@ namespace BNN {
 	inline Layer* Layer_load(std::istream& in) {
 		std::string token;
 		in >> token;
+		//I'm sure there is a better way, but whatever
 		if(token == "Input")
 			return Input::load(in);
 		else if(token == "Output")
@@ -37,6 +39,8 @@ namespace BNN {
 			return PixShuf::load(in);
 		else if(token == "Resize")
 			return Resize::load(in);
+		else if(token == "SConv")
+			return SConv::load(in);
 		else return nullptr;
 	}
 }

@@ -3,7 +3,7 @@
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {
-		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf, t_Resize
+		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf, t_Resize, t_SConv
 	};
 	class Layer {
 	public:
@@ -81,6 +81,15 @@ namespace BNN {
 		Layer* last() {
 			if(next) return next->last();
 			else return this;
+		}
+		//uniform distribution
+		static void uniform_init(Tensor& w, float range) {
+			w = (2.f * w.random() - 1.f) * range;
+		}
+		//distribution more likely to generate small values
+		static void squared_init(Tensor& w, float range) {
+			w = (2.f * w.random() - 1.f);
+			w = range * w.sign() * w.square();
 		}
 		virtual Layer* clone() const = 0;
 	protected:

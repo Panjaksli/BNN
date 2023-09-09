@@ -1,6 +1,7 @@
 #pragma once
 #include "Layer.h"
 namespace BNN {
+	//Normal convolution
 	class Conv : public Layer {
 	public:
 		Conv() {}
@@ -60,8 +61,8 @@ namespace BNN {
 		LType type() const override { return t_Conv; }
 	private:
 		void _init() {
-			if(bias)b = b.random() * 0.4f - 0.2f;
-			w = w.random() * 0.4f - 0.2f;
+			if(bias)squared_init(b, 0.2f);
+			squared_init(w, 0.2f);
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(bias)return next->compute((conv(x.reshape(din), w, st, pa) + b.broadcast(dim1<3>{1, odim(1), odim(2)})).unaryExpr(af.fx()));

@@ -8,7 +8,7 @@ namespace BNN {
 		~NNet() { Clear(); }
 		NNet(const NNet& cpy);
 		NNet& operator=(NNet cpy);
-		NNet(const std::string& name) : name(name) { Load(); }
+		NNet(const std::string& name, bool log = 0) : name(name) { Load(log); }
 		NNet(NNet first, const NNet& second) : NNet(first.Append(second)) {}
 		NNet(const vector<Layer*>& graph, Optimizer* opt, const std::string& name = "Net") : graph(graph), optimizer(opt), name(name) { Compile(); }
 		//fixed part of the network, learnable part
@@ -53,8 +53,8 @@ namespace BNN {
 		Layer* Front() { return graph.front(); }
 		void Save(const std::string& name) const;
 		void Save() const;
-		bool Load(const std::string& name);
-		bool Load();
+		bool Load(const std::string& name, bool log);
+		bool Load(bool log);
 		void Save_image(const Tensor& x) const;
 		void Save_image_DS(const Tensor& x) const;
 		void Save_images(const Tenarr& x) const;

@@ -107,5 +107,8 @@
     <ClInclude Include="Misc\Eigen_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Layers\SConv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

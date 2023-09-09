@@ -48,14 +48,14 @@ namespace BNN {
 	using uchar = uint_fast8_t;
 	using uint = uint_fast32_t;
 	inline uint xorshift32() {
-		thread_local static uint x = 0x28659f;
+		thread_local static uint x = 0x6969;
 		x ^= x << 13;
 		x ^= x >> 17;
 		x ^= x << 5;
 		return x;
 	}
 	inline uint fastrand() {
-		thread_local static uint x = 0x6f9f;
+		thread_local static uint x = 0x6969;
 		x = (214013U * x + 2531011U);
 		return x;
 	}

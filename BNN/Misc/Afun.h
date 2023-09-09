@@ -106,7 +106,7 @@ namespace BNN {
 		};
 		struct sat {
 			static float fx(float x) { return fminf(fmaxf(x, 0.f), 1.f); }
-			static float dx(float x) { return (x > 0.f) * (x < 1.f); }
+			static float dx(float x) { return (x > 0.f) & (x < 1.f); }
 			static constexpr Type type = t_sat;
 		};
 		struct sig {
@@ -116,7 +116,7 @@ namespace BNN {
 		};
 		struct clu {
 			static float fx(float x) { return fminf(fmaxf(x, -1.f), 1.f); }
-			static float dx(float x) { return (x > -1.f) * (x < 1.f); }
+			static float dx(float x) { return (x > -1.f) & (x < 1.f); }
 			static constexpr Type type = t_clu;
 		};
 		struct swish {

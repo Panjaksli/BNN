@@ -194,7 +194,7 @@ namespace BNN {
 		out << "Cost" SPC best_cost << "\n";
 	}
 	void NNet::Save() const { Save(name); }
-	bool NNet::Load(const std::string& folder) {
+	bool NNet::Load(const std::string& folder, bool log) {
 		if(!exists(folder)) {
 			println("Network file not found!");
 			return false;
@@ -213,11 +213,11 @@ namespace BNN {
 			else break;
 		}
 		name = folder;
-		println("Message:  Loaded Network:", name, "Cost:", best_cost);
-		Compile(1);
+		println("Message:  Loaded Network:", name);
+		Compile(log);
 		return true;
 	}
-	bool NNet::Load() { return Load(name); }
+	bool NNet::Load(bool log) { return Load(name, log); }
 	void NNet::Print() const {
 		println("------------------------------------------------------------------------------------------------");
 		std::cout << "Network\t|\t"; println(name, "\tCost:", best_cost);

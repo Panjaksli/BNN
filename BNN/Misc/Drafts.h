@@ -1,6 +1,26 @@
 #if 1
 
-
+inline float sum(__m256 x) {
+	__m256 y = x + _mm256_permute_ps(x, 0b00011011); // 41 32 23 14
+	__m256 z = y + _mm256_permute_ps(y, 0b01000001);
+	return z[0] + z[4];
+}
+inline float dot_simd(const float* vec1, const float* vec2, int n) {
+	float y = 0;
+	__m256 vy = _mm256_setzero_ps();
+	for(int i = 0; i < n; i += 8) {
+		if(i + 8 <= n) {
+			__m256 a = _mm256_loadu_ps(&vec1[i]);
+			__m256 b = _mm256_loadu_ps(&vec2[i]);
+			vy += a * b;
+		}
+		else {
+			for(int j = i; j < n; j++)
+				y += vec1[j] * vec2[j];
+		}
+	}
+	return y + sum(vy);
+}
 using Rensor = Eigen::Tensor<float, 3, Eigen::RowMajor, int>;
 
 inline void rm_convolve(Rensor& c, const Rensor& a, const Rensor& b, shp2 st, shp2 pa) {

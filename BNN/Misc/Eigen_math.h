@@ -1,6 +1,7 @@
 #pragma once
 #include "Eigen_util.h"
 namespace BNN {
+	//Classic convolution of N input channels with N*K filters
 	template <int cache = 4096>
 	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
@@ -41,7 +42,7 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
@@ -79,10 +80,54 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
+	}
+	//Convolve each input with each channel
+	template <int cache = 4096>
+	inline void convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
+						}
+					}
+				}
+				memcpy(&c(0, p, o), tmp, ich * 4);
+			}
+		}
+	}
+	template <int cache = 4096>
+	inline void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
+						}
+					}
+				}
+				for(idx ch = 0; ch < ich; ch++)
+					c(ch, p, o) += tmp[ch];
+			}
+		}
+
 	}
 	//fixing a fuckup where I was convolving incorrect filters in backprop, also reverse operation is included inhouse
 	//stupid me
@@ -129,7 +174,7 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
@@ -161,19 +206,20 @@ namespace BNN {
 					for(idx l = max(-i, 0); l < bdl - clip_l; l++) {
 						for(idx m = max(-j, 0); m < bdm - clip_m; m++) {
 							for(idx n = 0; n < ich; n++) {
+
 								for(idx k = 0; k < och; k++) {
 									tmp[k] += a(n, j + m, i + l) * b(n * och + k, bdm - 1 - m, bdl - 1 - l);
 								}
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 	}
-
-	template <int cache = 4>
+	//Convolve all filter combinations, N channels, K filters, N*K output channels
+	template <int cache = 4096>
 	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -214,7 +260,7 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
@@ -232,7 +278,7 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
@@ -252,11 +298,12 @@ namespace BNN {
 							}
 						}
 					}
-					memmove(&c(0, p, o), tmp, och * 4);
+					memcpy(&c(0, p, o), tmp, och * 4);
 				}
 			}
 		}
 	}
+	//Convolve all combinations and accumulate to output
 	template <int cache = 4096>
 	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
@@ -358,7 +405,7 @@ namespace BNN {
 					for(idx k = 0; k < y.dim[0]; k++) {
 						tmp[k] = x(k, lj, li);
 					}
-					memmove(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
+					memcpy(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
 				}
 			}
 		}
@@ -380,7 +427,7 @@ namespace BNN {
 						float d = x(k, hj, hi);
 						tmp[k] = lerp(lerp(a, b, wj), lerp(c, d, wj), wi);
 					}
-					memmove(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
+					memcpy(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
 				}
 			}
 		}
@@ -402,7 +449,7 @@ namespace BNN {
 						}
 						tmp[k] = clamp(bicerp(p, xd, yd), 0.f, 1.f);
 					}
-					memmove(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
+					memcpy(&y(0, j, i), tmp, y.dim[0] * sizeof(float));
 				}
 			}
 		}
@@ -502,7 +549,14 @@ namespace BNN {
 		convolve(c, a, b, str, pad);
 		return c;
 	}
-
+	inline Tensor conv_1to1(const Tensor& a, const Tensor& b, shp2 str = 1, shp2 pad = 0) {
+		idx d0 = a.dimension(0);
+		idx d1 = c_dim(a.dimension(1), b.dimension(1), str[0], pad[0]);
+		idx d2 = c_dim(a.dimension(2), b.dimension(2), str[1], pad[1]);
+		Tensor c(d0, d1, d2);
+		convolve_1to1(c, a, b, str, pad);
+		return c;
+	}
 	inline Tensor pool_max(const Tensor& a, shp2 ker = 2, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
@@ -511,7 +565,7 @@ namespace BNN {
 		pool_max_r(c, a, ker, str);
 		return c;
 	}
-	inline Tensor resize(const Tensor& x, double s1, double s2, Interpol filter = Cubic){
+	inline Tensor resize(const Tensor& x, double s1, double s2, Interpol filter = Cubic) {
 		Tensor y(x.dimension(0), idx(x.dimension(1) * s1), idx(x.dimension(2) * s2));
 		resize_r(y, x, filter);
 		return y;
