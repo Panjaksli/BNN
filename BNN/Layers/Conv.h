@@ -31,8 +31,9 @@ namespace BNN {
 		void gradient(Tensor& dw, Tensor& db, bool ptrain) override {
 			dz = y() * dz.unaryExpr(af.dx());
 			if(bias)db += dz.sum(dim1<2>{1, 2});
-			if(st[0] > 1 || st[1] > 1) {
-				auto dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
+			if(st[0] > 1 || st[1] > 1) { //Avoid creating temporary on the most common filter with stride 1 also larger stride might actually compensate for the inflated vector
+				//necessary temporary :( but this might be actually faster than doing the inflation on fly (3 integer divs, prevents autovectorization), so kind of a win ?
+				Tensor dy = dz.inflate(dim1<3>{ 1, st[0], st[1] });
 				acc_convolve(dw, x(), dy, 1, pa);
 				if(ptrain) rev_convolve({ x(),din }, dy, w, 1, ks - pa - 1);
 			}

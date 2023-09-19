@@ -12,6 +12,7 @@
 #include "Dropout.h"
 #include "PixShuf.h"
 #include "Resize.h"
+#include "Shape.h"
 namespace BNN {
 	inline Layer* Layer_load(std::istream& in) {
 		std::string token;
@@ -41,6 +42,8 @@ namespace BNN {
 			return Resize::load(in);
 		else if(token == "SConv")
 			return SConv::load(in);
+		else if(token == "Shape")
+			return Shape::load(in);
 		else return nullptr;
 	}
 }

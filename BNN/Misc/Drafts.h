@@ -5,29 +5,46 @@ struct Transform {
 	Transform(Tensor& data) : data(data), dim(data.dimensions()) {
 		compute_dim();
 	}
-	Transform(Tensor& data, shp3 dim, shp3 dil, shp3 pad) : data(data), dim(dim), dil(dil), pad(pad) {
+	Transform(Tensor& data, shp3 dim, shp3 dil, shp3 pad = shp3(0, 0, 0)) : data(data), dim(dim), dil(dil), pad(pad) {
 		compute_dim();
 	}
-	const float& operator() (idx i, idx j, idx k)const {
-		if(i % dil[0] == 0) {
-			return data.data()[i + j * dim[0] + k * dim[0] * dim[1]];
-		}
-		else return none;
+	float operator() (idx i, idx j, idx k)const {
+		if(i % dil[0] || j % dil[1] || k % dil[2]) return 0.f;
+		else return data.data()[i / dil[0] + j / dil[1] * dim[0] + k / dil[2] * dim[0] * dim[1]];
 	}
 	float& operator() (idx i, idx j, idx k) {
-		if() {
-			return data.data()[i + j * dim[0] + k * dim[0] * dim[1]];
-		}
-		else return none;
+		if(i % dil[0] || j % dil[1] || k % dil[2]) return none;
+		else return data.data()[i / dil[0] + j / dil[1] * dim[0] + k / dil[2] * dim[0] * dim[1]];
 	}
+	inline auto reshape() { return data.reshape(dim); }
+	inline auto inflate() { return data.inflate(dil); }
+	inline auto reshape_inflate() { return data.reshape(dim).inflate(dil); }
+	inline idx dimension(idx i) const { return odim[i]; }
+	inline const dim1<3>& dimensions(idx i) const { return odim; }
 	inline void compute_dim() {
 		for(int i = 0; i < 3; i++)
-			rdim[i] = dim[i] * dil[i] + 2 * pad[i] - 1;
+			odim[i] = (dim[i] - 1) * dil[i] + 1;
 	}
 	Tensor& data;
-	shp3 rdim, dim, dil = dim1<3>{ 1,1,1 }, pad = dim1<3>{ 0,0,0 };
+	dim1<3> odim, dim, dil = dim1<3>{ 1,1,1 }, pad = dim1<3>{ 0,0,0 };
 	float none = 0.f;
 };
+int main() {
+	{
+		Tensor x(1, 7, 7);
+		Tensor y(1, 4, 4);
+		y.setRandom();
+		Transform z(y, y.dimensions(), shp3(1, 3, 3));
+		for(int i = 0; i < x.dimension(2); i++) {
+			for(int j = 0; j < x.dimension(1); j++) {
+				for(int k = 0; k < x.dimension(0); k++) {
+					x(k, j, i) = z(k, j, i);
+				}
+			}
+		}
+		printnp(x);
+		return 0;
+	}
 void pp1(Tensor& x, const Tensor& y, const Tensor& z) {
 	for(int i = 0; i < x.size(); i++) {
 		x(i, 0, 0) = y(i, 0, 0) * z(i, 0, 0);

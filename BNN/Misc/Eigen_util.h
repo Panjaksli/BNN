@@ -51,7 +51,7 @@ namespace BNN {
 		shp3(const dim1<3>& d) : elem(d) {}
 		const idx& operator[](idx i) const { return elem[i]; }
 		idx& operator[](idx i) { return elem[i]; }
-		operator auto() {
+		operator const dim1<3>& () const {
 			return elem;
 		}
 		dim1<3> elem;

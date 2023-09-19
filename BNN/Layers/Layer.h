@@ -3,7 +3,7 @@
 #include "../Misc/Afun.h"
 namespace BNN {
 	enum LType {
-		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf, t_Resize, t_SConv
+		T_None, t_Input, t_Output, t_OutShuf, t_Dense, t_Conv, t_TConv, t_AvgPool, t_AvgUpool, t_Dropout, t_PixShuf, t_Resize, t_SConv, t_Shape
 	};
 	class Layer {
 	public:
