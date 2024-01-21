@@ -13,10 +13,10 @@ namespace BNN {
 				if(valid)node->gradient(dw, db, ptrain);
 				else node->derivative(ptrain);
 			}
-			void update_grad(float alpha, float inv_n, float lambda, Regul reg) {
+			void update_grad(float alpha, float inv_n, Regular reg) {
 				if(valid) {
-					gradient(dw, *node->get_w(), inv_n, lambda, reg);
-					gradient(db, *node->get_b(), inv_n, 0, L0);
+					gradient(dw, *node->get_w(), inv_n,  reg);
+					gradient(db, *node->get_b(), inv_n, Regular());
 					update(*node->get_w(), dw, alpha);
 					update(*node->get_b(), db, alpha);
 					reset_grad();
@@ -24,7 +24,10 @@ namespace BNN {
 				node->update();
 			}
 			void reset_grad() {
-				if(valid)init();
+				if(valid) {
+					dw.setZero();
+					db.setZero();
+				}
 			}
 			void reset_cache() {
 				if(valid)init();
@@ -39,10 +42,13 @@ namespace BNN {
 			Tensor* get_vb() { return nullptr; }
 			Tensor* get_mw() { return nullptr; }
 			Tensor* get_mb() { return nullptr; }
-			static void gradient(Tensor& dx, const Tensor& x, float inv_n, float lambda, Regul reg) {
-				switch(reg) {
-					case L1: dx = dx * inv_n + lambda * x.sign(); break;
-					case L2: dx = dx * inv_n + 2.f * lambda * x; break;
+			Tensor* get_db() { return &dw; }
+			Tensor* get_dw() { return &db; }
+			static void gradient(Tensor& dx, const Tensor& x, float inv_n,  Regular reg) {
+				switch(reg.tag) {
+					case RegulTag::L1: dx = (dx + reg.l1 * x.sign()) * inv_n; break;
+					case RegulTag::L2: dx = (dx + 2.f * reg.l2 * x) * inv_n; break;
+					case RegulTag::L1L2: dx = (dx + reg.l1 * x.sign() + 2.f * reg.l2 * x) * inv_n; break;
 					default: dx = dx * inv_n; break;
 				}
 			}
@@ -59,10 +65,10 @@ namespace BNN {
 		public:
 			AGD_node() {}
 			AGD_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
-			void update_grad(float alpha, float mu, float inv_n, float lambda, Regul reg) {
+			void update_grad(float alpha, float mu, float inv_n,  Regular reg) {
 				if(valid) {
-					gradient(dw, *node->get_w(), inv_n, lambda, reg);
-					gradient(db, *node->get_b(), inv_n, 0, L0);
+					gradient(dw, *node->get_w(), inv_n, reg);
+					gradient(db, *node->get_b(), inv_n, Regular());
 					update(*node->get_w(), vw, dw, alpha, mu);
 					update(*node->get_b(), vb, db, alpha, mu);
 					reset_grad();
@@ -95,10 +101,10 @@ namespace BNN {
 			NAG_node() {}
 			NAG_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
 
-			void update_grad(float alpha, float mu, float inv_n, float lambda, Regul reg) {
+			void update_grad(float alpha, float mu, float inv_n,  Regular reg) {
 				if(valid) {
-					gradient(dw, *node->get_w(), inv_n, lambda, reg);
-					gradient(db, *node->get_b(), inv_n, 0, L0);
+					gradient(dw, *node->get_w(), inv_n, reg);
+					gradient(db, *node->get_b(), inv_n, Regular());
 					update(*node->get_w(), vw, dw, alpha, mu);
 					update(*node->get_b(), vb, db, alpha, mu);
 					reset_grad();
@@ -131,10 +137,10 @@ namespace BNN {
 		public:
 			RMS_node() {}
 			RMS_node(Layer* node) : SGD_node(node), vw(node->wdims()), vb(node->bdims()) { init(); }
-			void update_grad(float alpha, float beta, float eps, float inv_n, float lambda, Regul reg) {
+			void update_grad(float alpha, float beta, float eps, float inv_n,  Regular reg) {
 				if(valid) {
-					gradient(dw, *node->get_w(), inv_n, lambda, reg);
-					gradient(db, *node->get_b(), inv_n, 0, L0);
+					gradient(dw, *node->get_w(), inv_n,  reg);
+					gradient(db, *node->get_b(), inv_n, Regular());
 					update(*node->get_w(), vw, dw, alpha, beta, eps);
 					update(*node->get_b(), vb, db, alpha, beta, eps);
 					reset_grad();
@@ -166,10 +172,10 @@ namespace BNN {
 		public:
 			ADAM_node() {}
 			ADAM_node(Layer* node) : SGD_node(node), mw(node->wdims()), mb(node->bdims()), vw(node->wdims()), vb(node->bdims()) { init(); }
-			void update_grad(float alpha, float beta1, float beta2, float eps, float inv_n, float lambda, Regul reg) {
+			void update_grad(float alpha, float beta1, float beta2, float eps, float inv_n,  Regular reg) {
 				if(valid) {
-					gradient(dw, *node->get_w(), inv_n, lambda, reg);
-					gradient(db, *node->get_b(), inv_n, 0, L0);
+					gradient(dw, *node->get_w(), inv_n,  reg);
+					gradient(db, *node->get_b(), inv_n, Regular());
 					update(*node->get_w(), mw, vw, dw, alpha, beta1, beta2, eps);
 					update(*node->get_b(), mb, vb, db, alpha, beta1, beta2, eps);
 					reset_grad();

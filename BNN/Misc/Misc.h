@@ -84,7 +84,12 @@ namespace BNN {
 			std::swap(shuff[i], shuff[raint(i, n - 1)]);
 		return shuff;
 	}
-
+	template <class T = int>
+	inline void shuffle(vector<T> &data) {
+		int n = data.size();
+		for(int i = 0; i < n - 1; i++)
+			std::swap(data[i], data[raint(i, n - 1)]);
+	}
 	inline double timer() {
 		auto t = std::chrono::high_resolution_clock::now();
 		return std::chrono::duration<double>(t.time_since_epoch()).count();

@@ -1,7 +1,17 @@
 #pragma once
 #include "Misc.h"
 namespace BNN {
-	enum Regul {L0, L1, L2};
+	enum class RegulTag {L0, L1, L2, L1L2};
+	struct Regular {
+		Regular(){}
+		Regular(RegulTag tag, float l) : tag(tag), l1(l), l2(l) {}
+		Regular(RegulTag tag, float l1, float l2) : tag(tag), l1(l1), l2(l2) {}
+		friend std::ostream& operator<<(std::ostream& os, const Regular & self) {
+			return os << (int)self.tag SPC self.l1 SPC self.l2;
+		}
+		RegulTag tag = RegulTag::L0;
+		float l1 = 0, l2 = 0;
+	};
 	class Efun {
 	public:
 		enum Type { t_mse, t_mae } type = t_mse;

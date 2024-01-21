@@ -1,8 +1,9 @@
 #pragma once
 #include "Eigen_util.h"
 namespace BNN {
+	constexpr int CACHE_SIZE = 4 * 4096;
 	//Classic convolution of N input channels with N*K filters
-	template <int cache = 4096>
+	template <int cache = CACHE_SIZE>
 	inline void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
@@ -29,7 +30,7 @@ namespace BNN {
 			}
 		}
 		else if(ich <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -65,7 +66,7 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -85,75 +86,10 @@ namespace BNN {
 			}
 		}
 	}
-	//Convolve each input with each channel
-	template <int cache = 4096>
-	inline void convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
-		idx ich = a.dimension(0);
-		float tmp[cache];
-		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
-			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-				memset(tmp, 0, 4 * ich);
-				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
-				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
-				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
-					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
-
-						for(idx n = 0; n < ich; n++) {
-							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
-						}
-					}
-				}
-				memcpy(&c(0, p, o), tmp, ich * 4);
-			}
-		}
-	}
-	template <int cache = 4096>
-	inline void rev_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
-		idx ich = a.dimension(0);
-		float tmp[cache];
-		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
-			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-				memset(tmp, 0, 4 * ich);
-				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
-				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
-				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
-					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
-
-						for(idx n = 0; n < ich; n++) {
-							tmp[n] += a(n, j + m, i + l) * b(n, b.dimension(1) - m - 1, b.dimension(2) - l - 1);
-						}
-					}
-				}
-				memcpy(&c(0, p, o), tmp, ich * 4);
-			}
-		}
-	}
-	template <int cache = 4096>
-	inline void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
-		idx ich = a.dimension(0);
-		float tmp[cache];
-		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
-			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
-				memset(tmp, 0, 4 * ich);
-				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
-				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
-				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
-					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
-						for(idx n = 0; n < ich; n++) {
-							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
-						}
-					}
-				}
-				for(idx ch = 0; ch < ich; ch++)
-					c(ch, p, o) += tmp[ch];
-			}
-		}
-
-	}
 	//fixing a fuckup where I was convolving incorrect filters in backprop, also reverse operation is included inhouse
 	//stupid me
 	//It was convolving for example 4 output filters by 4 first filters of the kernel which werent the filters corresponding to the input !!!
-	template <int cache = 4096>
+	template <int cache = CACHE_SIZE>
 	inline void rev_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
@@ -182,7 +118,7 @@ namespace BNN {
 			}
 		}
 		else if(ich <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - bdl + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - bdm + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -218,7 +154,7 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - bdl + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - bdm + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -240,7 +176,7 @@ namespace BNN {
 		}
 	}
 	//Convolve all filter combinations, N channels, K filters, N*K output channels
-	template <int cache = 4096>
+	template <int cache = CACHE_SIZE>
 	inline void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -268,7 +204,7 @@ namespace BNN {
 			}
 		}
 		else if(ach <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -286,7 +222,7 @@ namespace BNN {
 			}
 		}
 		else if(bch <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -304,7 +240,7 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -325,7 +261,7 @@ namespace BNN {
 		}
 	}
 	//Convolve all combinations and accumulate to output
-	template <int cache = 4096>
+	template <int cache = CACHE_SIZE>
 	inline void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
@@ -353,7 +289,7 @@ namespace BNN {
 			}
 		}
 		else if(ach <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -372,7 +308,7 @@ namespace BNN {
 			}
 		}
 		else if(bch <= 1) {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -391,7 +327,7 @@ namespace BNN {
 			}
 		}
 		else {
-			float tmp[cache];
+			alignas(64) float tmp[cache];
 			for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
 				for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
 					memset(tmp, 0, 4 * och);
@@ -409,6 +345,69 @@ namespace BNN {
 					for(idx ch = 0; ch < och; ch++)
 						c(ch, p, o) += tmp[ch];
 				}
+			}
+		}
+	}
+	//Convolve each input with each channel
+	template <int cache = 1024>
+	inline void convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		alignas(64) float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
+						}
+					}
+				}
+				memcpy(&c(0, p, o), tmp, ich * 4);
+			}
+		}
+	}
+	template <int cache = 1024>
+	inline void rev_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		alignas(64) float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, b.dimension(1) - m - 1, b.dimension(2) - l - 1);
+						}
+					}
+				}
+				memcpy(&c(0, p, o), tmp, ich * 4);
+			}
+		}
+	}
+	template <int cache = 1024>
+	inline void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		idx ich = a.dimension(0);
+		alignas(64) float tmp[cache];
+		for(idx i = -pa[1], o = 0; i < (a.dimension(2) + pa[1] - b.dimension(2) + 1); i += st[1], o++) {
+			for(idx j = -pa[0], p = 0; j < (a.dimension(1) + pa[0] - b.dimension(1) + 1); j += st[0], p++) {
+				memset(tmp, 0, 4 * ich);
+				idx clip_l = max(0, i + b.dimension(2) - a.dimension(2));
+				idx clip_m = max(0, j + b.dimension(1) - a.dimension(1));
+				for(idx l = max(-i, 0); l < b.dimension(2) - clip_l; l++) {
+					for(idx m = max(-j, 0); m < b.dimension(1) - clip_m; m++) {
+						for(idx n = 0; n < ich; n++) {
+							tmp[n] += a(n, j + m, i + l) * b(n, m, l);
+						}
+					}
+				}
+				for(idx ch = 0; ch < ich; ch++)
+					c(ch, p, o) += tmp[ch];
 			}
 		}
 	}
@@ -454,11 +453,11 @@ namespace BNN {
 		}
 		else if(filter == Cubic) {
 			for(idx i = 0; i < y.dim[2]; i++) {
-				float yc = fmaxf((i + 0.5f) * s2 - 0.5f, 0);
+				float yc = max((i + 0.5f) * s2 - 0.5f, 0.f);
 				int y0 = yc;
 				float yd = yc - y0;
 				for(idx j = 0; j < y.dim[1]; j++) {
-					float xc = fmaxf((j + 0.5f) * s1 - 0.5f, 0);
+					float xc = max((j + 0.5f) * s1 - 0.5f,0.f);
 					int x0 = xc;
 					float xd = xc - x0;
 					for(idx k = 0; k < y.dim[0]; k++) {

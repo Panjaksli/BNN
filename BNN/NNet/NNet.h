@@ -14,7 +14,8 @@ namespace BNN {
 		//fixed part of the network, learnable part
 		bool Compile(bool log = 1);
 		bool Train_single(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1);
-		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16, idx steps = -1);
+		bool Train_parallel(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16, idx steps = -1, bool keep_grad = 0);
+		bool Train_Minibatch(const Tenarr& x0, const Tenarr& y0, idx epochs = 100, float rate = -1, idx batch = -1, idx nlog = -1, idx threads = 16, idx shuff_per = 10);
 		void Clear();
 		void Print() const;
 		dim1<3> In_dims()const { return graph.front()->idims(); }
@@ -47,6 +48,18 @@ namespace BNN {
 		//compute but agnostic to the input size (mostly), dont use with dense layers!!!!!!!!!!!!!!!!
 		Tensor Compute_DS(const Tensor& x) const {
 			return graph.front()->compute_ds(x);
+		}
+		NNet Clone_raw() const {
+			NNet cpy;
+			cpy.name = name;
+			cpy.compiled = false;
+			for(const auto& g : graph) {
+				cpy.graph.push_back(g->clone());
+			}
+			cpy.optimizer = new SGD(Optim()->alpha, Optim()->reg);
+			cpy.optimizer->reset_all();
+			cpy.Compile(0);
+			return cpy;
 		}
 		NNet& Append(const NNet& other);
 		Layer* Back() { return graph.back(); }
