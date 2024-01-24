@@ -1,5 +1,5 @@
 # BNN
-Basic Neural Net -  Neural network built on top of Eigen/Tensor library, offering support for various layers and parallel CPU learning. The library delivers exceptional performance in spatial convolutions, achieving up to 100x performance of Convolve method from Eigen/Tensor along with much better CPU clock scaling
+Basic Neural Net -  Neural network built on top of Eigen/Tensor library, offering support for various layers and parallel CPU learning. The library delivers exceptional performance in spatial convolutions, achieving up to 100x performance of Convolve method from Eigen/Tensor (it is very suboptimal).
 ## What is this library ?
 This is an Eigen based sequential neural network library with goal of implementing various layer types, activation functions and optimizers whilst achieving superior perfomance in CPU training **and I really mean superior**. Almost everything is implemented from scratch !
 ## Performance optimizations
@@ -16,21 +16,25 @@ top.push_back(new Conv(12, 5, 1, 2, top.back(), true, Afun::t_cubl));
 top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_cubl));
 top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_cubl));
 top.push_back(new OutShuf(top.back(), 2));
-auto opt = new Adam(0.001f);
+//Optimizer with: learning rate, regularizer 
+auto opt = new Adam(0.001f, Regular(RegulTag::L2, 0.1f));
 NNet net(top, opt, "Network name");
 ```
 If you do any changes to the architecture after that, you need to compile it before running !\
-For training you can then use the Train_single() or Train_parallel() functions, followed by Save() to save the network to a hybrid text/binary file.
-Save_images() can be used to save the output tensor as png image(s).
+For training you can then use the Train_single(), Train_parallel() or **Train_Minibatch()** functions, followed by Save() to save the network to a hybrid text/binary file.
+Save_images() can be used to save the output tensor as png image(s), if it has 1 or 3 channels.
 ```cpp
+//Channels, Width, Height, Count
+Tenarr x(3, 240, 160, train_set);
+Tenarr y(3, 240, 160, train_set);
 for(int i = 0; i < 100; i++) {
-  // input output, epochs, rate (0 = default), batch size, log count, threads, steps (each step shuffles dataset) 
-	if(!net.Train_parallel(x, y, 20, 0, 48, 100, 16, 10)) break;
+  // input, target, epochs, minibatch size, threads, steps (minibatches per epoch), learning rate
+	if(!net.Train_Minibatch(x, y, 20, 16, 16, -1, decay_rate(0.001f, i, 20))) break;
 	net.Save();
 	net.Save_images(z);
 }
 ```
-
+See Example1 or Example2 for further usage !!!
 ## Comparison relu vs cubic-linear vs swish
 ### Training cost in 2 layer upscaling CNN:
 ![image](https://github.com/Panjaksli/BNN/assets/82727531/41292bdb-1f6f-4afc-a447-e4f843288343)
