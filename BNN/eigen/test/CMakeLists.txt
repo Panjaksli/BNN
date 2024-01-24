@@ -48,7 +48,7 @@ if(CHOLMOD_FOUND AND EIGEN_BUILD_BLAS AND EIGEN_BUILD_LAPACK)
   set(SPARSE_LIBS ${SPARSE_LIBS} ${CHOLMOD_LIBRARIES} ${EIGEN_BLAS_LIBRARIES} ${EIGEN_LAPACK_LIBRARIES})
   set(CHOLMOD_ALL_LIBS  ${CHOLMOD_LIBRARIES} ${EIGEN_BLAS_LIBRARIES} ${EIGEN_LAPACK_LIBRARIES})
   ei_add_property(EIGEN_TESTED_BACKENDS "CHOLMOD, ")
-  
+
   ei_add_test(cholmod_support "" "${CHOLMOD_ALL_LIBS}")
 else()
   ei_add_property(EIGEN_MISSING_BACKENDS "CHOLMOD, ")
@@ -61,7 +61,7 @@ if(UMFPACK_FOUND AND EIGEN_BUILD_BLAS)
   set(SPARSE_LIBS ${SPARSE_LIBS} ${UMFPACK_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   set(UMFPACK_ALL_LIBS ${UMFPACK_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   ei_add_property(EIGEN_TESTED_BACKENDS "UMFPACK, ")
-  
+
   ei_add_test(umfpack_support "" "${UMFPACK_ALL_LIBS}")
 else()
   ei_add_property(EIGEN_MISSING_BACKENDS "UMFPACK, ")
@@ -74,7 +74,7 @@ if(KLU_FOUND AND EIGEN_BUILD_BLAS)
   set(SPARSE_LIBS ${SPARSE_LIBS} ${KLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   set(KLU_ALL_LIBS ${KLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   ei_add_property(EIGEN_TESTED_BACKENDS "KLU, ")
-  
+
   ei_add_test(klu_support "" "${KLU_ALL_LIBS}")
 else()
   ei_add_property(EIGEN_MISSING_BACKENDS "KLU, ")
@@ -87,7 +87,7 @@ if(SuperLU_FOUND AND EIGEN_BUILD_BLAS)
   set(SPARSE_LIBS ${SPARSE_LIBS} ${SUPERLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   set(SUPERLU_ALL_LIBS ${SUPERLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
   ei_add_property(EIGEN_TESTED_BACKENDS  "SuperLU, ")
-  
+
   ei_add_test(superlu_support "" "${SUPERLU_ALL_LIBS}")
 else()
   ei_add_property(EIGEN_MISSING_BACKENDS  "SuperLU, ")
@@ -171,6 +171,7 @@ endif()
 set_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT "Official")
 add_custom_target(BuildOfficial)
 
+ei_add_test(clz)
 ei_add_test(rand)
 ei_add_test(meta)
 ei_add_test(maxsizevector)
@@ -182,6 +183,7 @@ ei_add_test(first_aligned)
 ei_add_test(type_alias)
 ei_add_test(nullary)
 ei_add_test(mixingtypes)
+ei_add_test(float_conversion)
 ei_add_test(io)
 ei_add_test(packetmath "-DEIGEN_FAST_MATH=1")
 ei_add_test(vectorization_logic)
@@ -234,6 +236,7 @@ ei_add_test(product_trmm)
 ei_add_test(product_trsolve)
 ei_add_test(product_mmtr)
 ei_add_test(product_notemporary)
+ei_add_test(product_threaded "-pthread" "${CMAKE_THREAD_LIBS_INIT}")
 ei_add_test(stable_norm)
 ei_add_test(permutationmatrices)
 ei_add_test(bandmatrix)
@@ -404,7 +407,7 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
   string(REPLACE "-pedantic" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "-Wundef" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "-Wnon-virtual-dtor" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "-fno-check-new" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  
+  string(REPLACE "-fno-check-new" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
   if(EIGEN_TEST_CUDA_CLANG)
     string(APPEND CMAKE_CXX_FLAGS " --cuda-path=${CUDA_TOOLKIT_ROOT_DIR}")
@@ -431,12 +434,12 @@ if(CUDA_FOUND AND EIGEN_TEST_CUDA)
     set(CUDA_NVCC_FLAGS  "--expt-relaxed-constexpr -Xcudafe \"--display_error_number\" ${NVCC_ARCH_FLAGS} ${CUDA_NVCC_FLAGS} ${EIGEN_CUDA_CXX_FLAGS}")
     cuda_include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CUDA_TOOLKIT_ROOT_DIR}/include")
   endif()
-  
+
   set(EIGEN_ADD_TEST_FILENAME_EXTENSION  "cu")
-  
+
   ei_add_test(gpu_example)
   ei_add_test(gpu_basic)
-  
+
   unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
 
 endif()
@@ -446,34 +449,36 @@ endif()
 option(EIGEN_TEST_HIP "Add HIP support." OFF)
 if (EIGEN_TEST_HIP)
 
-  set(HIP_PATH "/opt/rocm/hip" CACHE STRING "Path to the HIP installation.")
+  set(ROCM_PATH "/opt/rocm" CACHE STRING "Path to the ROCm installation.")
 
-  if (EXISTS ${HIP_PATH})
-    
-    list(APPEND CMAKE_MODULE_PATH ${HIP_PATH}/cmake) 
-
-    find_package(HIP REQUIRED)
-    if (HIP_FOUND)
-
-      execute_process(COMMAND ${HIP_PATH}/bin/hipconfig --platform OUTPUT_VARIABLE HIP_PLATFORM)
-
-      if ((${HIP_PLATFORM} STREQUAL "hcc") OR (${HIP_PLATFORM} STREQUAL "amd"))
-
-	include_directories(${HIP_PATH}/include)
-
-	set(EIGEN_ADD_TEST_FILENAME_EXTENSION  "cu")
-	ei_add_test(gpu_basic)
-  ei_add_test(gpu_example)
-	unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
-	
-      elseif ((${HIP_PLATFORM} STREQUAL "nvcc") OR (${HIP_PLATFORM} STREQUAL "nvidia"))
-	message(FATAL_ERROR "HIP_PLATFORM = nvcc is not supported within Eigen")
-      else ()
-	message(FATAL_ERROR "Unknown HIP_PLATFORM = ${HIP_PLATFORM}")
-      endif() 
-    endif()
+  if (EXISTS ${ROCM_PATH}/hip)
+    set(HIP_PATH ${ROCM_PATH}/hip)
+    list(APPEND CMAKE_MODULE_PATH ${HIP_PATH}/cmake)
+  elseif (EXISTS ${ROCM_PATH}/lib/cmake/hip)
+    set(HIP_PATH ${ROCM_PATH})
+    list(APPEND CMAKE_MODULE_PATH ${HIP_PATH}/lib/cmake/hip)
   else ()
-    message(FATAL_ERROR "EIGEN_TEST_HIP is ON, but the specified HIP_PATH (${HIP_PATH}) does not exist")
+    message(FATAL_ERROR "EIGEN_TEST_HIP is ON, but could not find the ROCm installation under ${ROCM_PATH}")
+  endif()
+
+  find_package(HIP REQUIRED)
+  if (HIP_FOUND)
+    execute_process(COMMAND ${HIP_PATH}/bin/hipconfig --platform OUTPUT_VARIABLE HIP_PLATFORM)
+
+    if ((${HIP_PLATFORM} STREQUAL "hcc") OR (${HIP_PLATFORM} STREQUAL "amd"))
+
+      include_directories(${HIP_PATH}/include)
+
+      set(EIGEN_ADD_TEST_FILENAME_EXTENSION  "cu")
+      ei_add_test(gpu_basic)
+      ei_add_test(gpu_example)
+      unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+
+    elseif ((${HIP_PLATFORM} STREQUAL "nvcc") OR (${HIP_PLATFORM} STREQUAL "nvidia"))
+      message(FATAL_ERROR "HIP_PLATFORM = nvcc is not supported within Eigen")
+    else ()
+      message(FATAL_ERROR "Unknown HIP_PLATFORM = ${HIP_PLATFORM}")
+    endif()
   endif()
 endif()
 

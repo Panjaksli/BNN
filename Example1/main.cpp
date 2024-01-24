@@ -31,7 +31,8 @@ int main() {
 	std::string parent = "Upscaler/";
 	//Input data
 	std::string in_folder = "Downscaler/";
-	std::string netname = parent + "c5c3x64_c3x32x3";
+	std::string netname = parent + "c5x32_c3x32x3";
+	//NNet upscl(parent + "c5x32_c3x32x3");
 	Tenarr x(3, 240, 160, train_set);
 #pragma omp parallel for
 	for(idx i = 0; i < train_set; i++)
@@ -54,29 +55,29 @@ int main() {
 	//hidden layers
 	vector<Layer*> top;
 	top.push_back(new Input(shp3(3, 240, 160)));
-	//top.push_back(new Conv(64, 5, 1, 2, top.back(), true, Afun::t_cubl));
-	top.push_back(new Conv(64, 5, 1, 2, top.back(), true, Afun::t_lrelu));
-	top.push_back(new Conv(64, 5, 1, 2, top.back(), true, Afun::t_lrelu));
-	top.push_back(new Conv(64, 3, 1, 1, top.back(), true, Afun::t_lrelu));
-	top.push_back(new Conv(64, 3, 1, 1, top.back(), true, Afun::t_lrelu));
+	top.push_back(new Conv(32, 5, 1, 2, top.back(), true, Afun::t_lrelu));
+	//top.push_back(new Conv(32, 5, 1, 2, top.back(), true, Afun::t_lrelu));
 	top.push_back(new Conv(32, 3, 1, 1, top.back(), true, Afun::t_lrelu));
 	top.push_back(new Conv(32, 3, 1, 1, top.back(), true, Afun::t_lrelu));
 	top.push_back(new Conv(12, 3, 1, 1, top.back(), true, Afun::t_clu));
 	/*top.push_back(new SConv(3, 1, 1, top.back()));
 	top.push_back(new Conv(32, 1, 1, 0, top.back(), true, Afun::t_cubl));*/
 	top.push_back(new OutShuf(top.back(), 2, Efun::t_mae));
-	auto opt = new Adam(0.002f, Regular(RegulTag::L2, 0.01f));
+	auto opt = new Adam(0.002f);
 
 	NNet net(top, opt, netname);
 #else
 	NNet net(netname, true);
 #endif
-	for(idx i = 0; i < 100; i++) {
-		if(!net.Train_Minibatch(x, y, 100, 0.0003, 24/*12 * std::min(i / 4 + 1, 5)*/, 100, 12, 10)) break;
+	// * std::min(i / 4 + 1, 5)
+
+	for(idx i = 0; i < 20; i++) {
+		if(!net.Train_Minibatch(x, y, 20, 16, 16, -1, decay_rate(0.001f, i, 20))) break;
 		//if(!net.Train_single(x, y, 100, 0.001, 16 * std::min(i / 4 + 1, 5), 100)) break;
 		net.Save();
 #pragma omp parallel for
 		for(idx j = 0; j < test_set; j++) {
+			//Image(net.Compute(z.chip(j, 3))).save(netname + "/" + std::to_string(j) + ".png");
 			if(j < 10)
 				Image(net.Compute(z.chip(j, 3)).abs() * 10.f).save(netname + "/" + std::to_string(j) + ".png");
 			else

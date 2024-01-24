@@ -188,75 +188,75 @@ namespace BNN {
 		}
 		return cost;
 	}
-	bool NNet::Train_Minibatch(const Tenarr& x0, const Tenarr& y0, idx epochs, float rate, idx batch, idx nlog, idx threads, idx shuff_per) {
-		if(!integrity_check(x0.dimensions(), y0.dimensions())) return false;
-		if(rate > 0) optimizer->alpha = rate;
-		if(batch < 0 || batch > x0.dimension(3)) batch = x0.dimension(3);
-		if(batch < threads) threads = batch;
-		if(nlog <= 0) nlog = epochs;
-		if(shuff_per <= 0) shuff_per = 1;
+	bool NNet::Train_Minibatch(const Tenarr& x0, const Tenarr& y0, idx epochs, idx batch_sz, idx threads, idx steps, float rate) {
+		idx dataset_sz = x0.dimension(3);
+		if(!integrity_check(x0.dimensions(), y0.dimensions()) || dataset_sz <= 0) return false;
+		if(batch_sz < 0 || batch_sz > dataset_sz) batch_sz = dataset_sz;
+		if(batch_sz < threads) threads = batch_sz;
+		if(steps <= 0 || steps >= dataset_sz / batch_sz) steps = dataset_sz / batch_sz;
 		float cost = 0;
-		float mult = 1.f / batch;
-		idx batch_sz = batch / threads;
-		idx log_step = epochs / nlog;
-		log_step = max(1, log_step);
-		printr("Training Network:", name, "Dataset sz:", batch, "Threads:", threads, "Batch sz:", batch_sz);
+		idx thr_work = batch_sz / threads;
+		printr("Training Network:", name, "Dataset:", batch_sz * steps, "Batch:", batch_sz, "Threads:", threads, "Thr. work:", thr_work);
 		double t = timer();
 		NNet net(*this);
 		//Creates copy of this NNet, zeroes all gradients and buffers in optimizer
 		net.optimizer->reset_all();
 		//Divisor for gradients, is equal to 1 / minibatch
-		net.optimizer->inv_n = mult;
+		net.optimizer->inv_n = 1.f / batch_sz;
+		if(rate > 0) net.optimizer->alpha = rate;
 		// Pool of NNets, each has SGD optimizer containing ONLY gradients dw and db, those are INITIALIZED TO ZERO
 		vector<NNet> nets(threads, net.Clone_raw());
 		// Shuffled array of indices of dataset size 
-		vector<int> indices = shuffled(x0.dimension(3));
+		vector<int> indices = shuffled(dataset_sz);
 		for(idx epoch = 0; epoch < epochs; epoch++) {
 			double dt = timer();
 			cost = 0;
-			//For each NNet (thread) accumulate gradients for N elements, N = minibatch / threads
+			for(idx step = 0; step < steps; step++) {
+				//For each NNet (thread) accumulate gradients for N elements, N = minibatch / threads
 #pragma omp parallel for shared(x0,y0,nets,indices) reduction(+:cost) schedule(static, 1)
-			for(idx th = 0; th < threads; th++) {
-				float loc_cost = 0;
-				idx off = th * batch_sz;
-				for(idx j = 0; j < batch_sz; j++) {
-					nets[th].graph.front()->predict(x0.chip(indices[off + j], 3));
-					loc_cost += nets[th].graph.back()->error(y0.chip(indices[off + j], 3));
-					nets[th].optimizer->get_grad();
+				for(idx th = 0; th < threads; th++) {
+					float thr_cost = 0;
+					idx off = step * batch_sz + th * thr_work;
+					for(idx j = 0; j < thr_work; j++) {
+						nets[th].graph.front()->predict(x0.chip(indices[off + j], 3));
+						thr_cost += nets[th].graph.back()->error(y0.chip(indices[off + j], 3));
+						nets[th].optimizer->get_grad();
+					}
+					cost += thr_cost;
 				}
-				cost += loc_cost;
-			}
-			//Compute current cost as acc_cost / minibatch
-			cost *= mult;
-			if(cost > 1e6) return false;
-			best_cost = fminf(cost, best_cost);
-			// Accumulate gradients from each thread to a single net
-			for(idx th = 0; th < threads; th++) {
-				for(idx i = 0; i < net.optimizer->size(); i++) {
-					if(net.optimizer->get_dw(i)) *net.optimizer->get_dw(i) += (*nets[th].optimizer->get_dw(i));
-					if(net.optimizer->get_db(i)) *net.optimizer->get_db(i) += (*nets[th].optimizer->get_db(i));
+				//Compute current cost as acc_cost / minibatch
+				if(cost / (step + 1) / batch_sz > 1e6) return false;
+				best_cost = fminf(cost, best_cost);
+				// Accumulate gradients from each thread to a single net
+				for(idx th = 0; th < threads; th++) {
+					for(idx i = 0; i < net.optimizer->size(); i++) {
+						if(net.optimizer->get_dw(i))
+							*net.optimizer->get_dw(i) += (*nets[th].optimizer->get_dw(i));
+						if(net.optimizer->get_db(i))
+							*net.optimizer->get_db(i) += (*nets[th].optimizer->get_db(i));
+					}
+					// Zero gradients dw and db in each threads
+					nets[th].Optim()->reset_grad();
 				}
-				// Zero gradients dw and db in each threads
-				nets[th].Optim()->reset_grad();
-			}
-			// Update the main net weights, resets gradients but not velocity etc.
-			net.optimizer->update_grad();
-			// Copy new weights to all threads
-			for(idx th = 0; th < threads; th++) {
-				for(idx node = 0; node < net.graph.size(); node++) {
-					if(nets[th].graph[node]->get_w()) *nets[th].graph[node]->get_w() = *net.graph[node]->get_w();
-					if(nets[th].graph[node]->get_b()) *nets[th].graph[node]->get_b() = *net.graph[node]->get_b();
+				// Update the main net weights, resets gradients but not velocity etc.
+				net.optimizer->update_grad();
+				// Copy new weights to all threads
+	//#pragma omp parallel for shared(nets, net) schedule(static, 1)
+				for(idx th = 0; th < threads; th++) {
+					for(idx node = 0; node < net.graph.size(); node++) {
+						if(nets[th].graph[node]->get_w()) *nets[th].graph[node]->get_w() = *net.graph[node]->get_w();
+						if(nets[th].graph[node]->get_b()) *nets[th].graph[node]->get_b() = *net.graph[node]->get_b();
+					}
 				}
 			}
+			cost /= steps * batch_sz;
 			// Shuffle dataset indices
-			if(epoch % shuff_per == 0)shuffle(indices);
+			shuffle(indices);
 			best_cost = fminf(cost, best_cost);
-			if(epoch % log_step == 0) {
-				printr("Epoch:", epoch, "Cost:", cost, "Min:", best_cost, "Step:", timer(dt) / log_step, "Time:", timer(t), "           ");
-			}
+			printr("Epoch:", epoch, "Rate:", net.optimizer->alpha, "Cost:", cost, "Min:", best_cost, "Step:", timer(dt), "Time:", timer(t), "           ");
 		}
 		println("Trained Network:", name, "Cost:", cost, "Best:", best_cost, "Time:", timer(t), "                ");
-		*this = net;
+		std::swap(*this, net);
 		return true;
 	}
 	void NNet::Save(const std::string& folder) const {

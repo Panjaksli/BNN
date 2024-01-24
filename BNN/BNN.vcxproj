@@ -209,6 +209,7 @@
   <ItemGroup>
     <ClCompile Include="BNN.cpp" />
     <ClCompile Include="Image\Image.cpp" />
+    <ClCompile Include="Misc\Eigen_math.cpp" />
     <ClCompile Include="NNet\NNet.cpp" />
     <ClCompile Include="NNet\NNet_samples.cpp" />
   </ItemGroup>

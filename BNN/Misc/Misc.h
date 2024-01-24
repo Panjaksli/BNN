@@ -75,6 +75,9 @@ namespace BNN {
 	T saturate(const T& x) {
 		return min(max(x, T(0)), T(1));
 	}
+	inline float decay_rate(float alpha, float iter, float end_iter) {
+		return alpha / (1.f + powf(iter/ end_iter,2));
+	}
 	template <class T = int>
 	inline vector<T> shuffled(int n) {
 		vector<T> shuff(n);

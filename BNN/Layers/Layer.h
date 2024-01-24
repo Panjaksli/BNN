@@ -91,6 +91,9 @@ namespace BNN {
 			w = (2.f * w.random() - 1.f);
 			w = range * w.sign() * w.square();
 		}
+		static void xavier_init(Tensor& w, float fin, float fout) {
+			w = sqrtf(6.0f / (fin + fout)) * (2.f * w.random() - 1.f);
+		}
 		virtual Layer* clone() const = 0;
 	protected:
 		void set_next(Layer* node) { next = node; }

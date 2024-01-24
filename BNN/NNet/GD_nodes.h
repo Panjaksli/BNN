@@ -46,9 +46,9 @@ namespace BNN {
 			Tensor* get_dw() { return &db; }
 			static void gradient(Tensor& dx, const Tensor& x, float inv_n,  Regular reg) {
 				switch(reg.tag) {
-					case RegulTag::L1: dx = (dx + reg.l1 * x.sign()) * inv_n; break;
-					case RegulTag::L2: dx = (dx + 2.f * reg.l2 * x) * inv_n; break;
-					case RegulTag::L1L2: dx = (dx + reg.l1 * x.sign() + 2.f * reg.l2 * x) * inv_n; break;
+					case RegulTag::L1: dx = dx * inv_n + reg.l1 * x.sign(); break;
+					case RegulTag::L2: dx = dx * inv_n + 2.f * reg.l2 * x; break;
+					case RegulTag::L1L2: dx = dx * inv_n + reg.l1 * x.sign() + 2.f * reg.l2 * x; break;
 					default: dx = dx * inv_n; break;
 				}
 			}

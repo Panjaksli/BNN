@@ -59,8 +59,8 @@ namespace BNN {
 		dim1<3> idims() const override { return din; }
 	private:
 		void _init() {
-			if(bias)squared_init(b, 0.2f);
-			squared_init(w, 0.2f);
+			if(bias)b.setZero();
+			xavier_init(w, din[0] * ks[0] * ks[1], ks[0] * ks[1] * w.dimension(0) / din[0]);
 		}
 		Tensor compute(const Tensor& x) const override {
 			if(st[0] > 1 || st[1] > 1) {

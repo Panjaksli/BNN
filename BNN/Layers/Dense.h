@@ -48,8 +48,8 @@ namespace BNN {
 		LType type() const override { return t_Dense; }
 	private:
 		void _init() {
-			squared_init(b, 0.2f);
-			squared_init(w, 0.2f);
+			b.setZero();//squared_init(b, 0.2f);
+			xavier_init(w, w.dimension(1), w.dimension(2));
 		}
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(fma(w, x, b).unaryExpr(af.fx()));

@@ -66,7 +66,7 @@ namespace BNN {
 		LType type() const override { return t_SConv; }
 	private:
 		void _init() {
-			squared_init(w, 0.2f);
+			xavier_init(w, ks[0] * ks[1], ks[0] * ks[1]);
 		}
 		Tensor compute(const Tensor& x) const override {
 			return next->compute(conv_1to1(x, w, st, pa));
