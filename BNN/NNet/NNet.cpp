@@ -194,9 +194,9 @@ namespace BNN {
 		if(batch_sz < 0 || batch_sz > dataset_sz) batch_sz = dataset_sz;
 		if(batch_sz < threads) threads = batch_sz;
 		if(steps <= 0 || steps >= dataset_sz / batch_sz) steps = dataset_sz / batch_sz;
-		float cost = 0;
+		printr("Training Network:", name, "Data:", dataset_sz, "Steps:", steps, "Batch:", batch_sz, "Threads:", threads);
 		idx thr_work = batch_sz / threads;
-		printr("Training Network:", name, "Dataset:", batch_sz * steps, "Batch:", batch_sz, "Threads:", threads, "Thr. work:", thr_work);
+		float cost = 0;
 		double t = timer();
 		NNet net(*this);
 		//Creates copy of this NNet, zeroes all gradients and buffers in optimizer
@@ -225,8 +225,7 @@ namespace BNN {
 					cost += thr_cost;
 				}
 				//Compute current cost as acc_cost / minibatch
-				if(cost / (step + 1) / batch_sz > 1e6) return false;
-				best_cost = fminf(cost, best_cost);
+				if(cost / ((step + 1) * batch_sz) > 1e6) return false;
 				// Accumulate gradients from each thread to a single net
 				for(idx th = 0; th < threads; th++) {
 					for(idx i = 0; i < net.optimizer->size(); i++) {
@@ -241,7 +240,7 @@ namespace BNN {
 				// Update the main net weights, resets gradients but not velocity etc.
 				net.optimizer->update_grad();
 				// Copy new weights to all threads
-	//#pragma omp parallel for shared(nets, net) schedule(static, 1)
+#pragma omp parallel for shared(nets, net) schedule(static, 1)
 				for(idx th = 0; th < threads; th++) {
 					for(idx node = 0; node < net.graph.size(); node++) {
 						if(nets[th].graph[node]->get_w()) *nets[th].graph[node]->get_w() = *net.graph[node]->get_w();
@@ -250,10 +249,11 @@ namespace BNN {
 				}
 			}
 			cost /= steps * batch_sz;
+			best_cost = fminf(cost, best_cost);
 			// Shuffle dataset indices
 			shuffle(indices);
-			best_cost = fminf(cost, best_cost);
-			printr("Epoch:", epoch, "Rate:", net.optimizer->alpha, "Cost:", cost, "Min:", best_cost, "Step:", timer(dt), "Time:", timer(t), "           ");
+			dt = timer(dt);
+			printr("Ep:", epoch + 1, "Loss:", cost, "Best:", best_cost, "Epoch [s]:", dt, "Step [ms]:", 1000 * dt / steps, "Time [s]:", timer(t), "           ");
 		}
 		println("Trained Network:", name, "Cost:", cost, "Best:", best_cost, "Time:", timer(t), "                ");
 		std::swap(*this, net);

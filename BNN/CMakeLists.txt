@@ -1,4 +1,5 @@
 set(PROJECT_NAME BNN)
+set(CXX_STANDARD 20)
 
 ################################################################################
 # Source groups
@@ -173,14 +174,9 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "libomp"
-    )
-elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
-    set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "libomp"
-    )
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(BNN PUBLIC OpenMP::OpenMP_CXX)
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 

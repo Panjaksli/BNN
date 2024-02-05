@@ -231,6 +231,7 @@
     <ClInclude Include="Misc\Drafts.h" />
     <ClInclude Include="Misc\Eigen_math.h" />
     <ClInclude Include="Misc\Eigen_util.h" />
+    <ClInclude Include="Misc\TF_Eigen_math.h" />
     <ClInclude Include="NNet\GD_nodes.h" />
     <ClInclude Include="Layers\Dropout.h" />
     <ClInclude Include="Layers\Input.h" />

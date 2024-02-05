@@ -1,70 +1,74 @@
 #pragma once
 #include "Eigen_util.h"
 namespace BNN {
-	void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+
+	void conv2d(Tensor& out, const Tensor& inp, const Tensor& ker, shp2 st, shp2 pa, shp2 dil = 1);
+	void conv2d_igrad(Tensor& inp, const Tensor& out, const Tensor& ker, shp2 st, shp2 pa, shp2 dil = 1);
+	void conv2d_wgrad(Tensor& ker, const Tensor& inp, const Tensor& out, shp2 st, shp2 pa, shp2 dil = 1);
+
+	void convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	//fixing a fuckup where I was convolving incorrect filters in backprop, also reverse operation is included inhouse
 	//stupid me
 	//It was convolving for example 4 output filters by 4 first filters of the kernel which werent the filters corresponding to the input !!!
-	void rev_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void rev_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	//Convolve all filter combinations, N channels, K filters, N*K output channels
 	
-	void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void all_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	//Convolve all combinations and accumulate to output
 	
-	void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void acc_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	//Convolve each input with each channel
 	
-	void convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	
-	void rev_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void rev_convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	
-	void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
+	void acc_convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa);
 	//bilinear resize
-	void resize_r(Reshape y, const Tensor& x, Interpol filter);
+	void resize_r(TensRef y, const Tensor& x, Interpol filter);
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
-	template <class derived>
-	inline void mul_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		for(idx i = 0; i < a.dimension(0); i++) {
-			for(idx j = 0; j < b.dimension(0); j++) {
-				c.chip(i * b.dimension(0) + j, 0) = a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims });
+	
+	inline void mul_r(Tensor& c, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+		
+		for(idx i = 0; i < a.dimension(2); i++) {
+			for(idx j = 0; j < b.dimension(2); j++) {
+				c.chip(i * b.dimension(2) + j, 2) = a.chip(i, 2).contract(b.chip(j, 2), dim2<1>{ dims });
 			}
 		}
 	}
 	//fma operation
-	template <class derived>
-	inline void fma_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, const Tensor& c, shp2 dims = { 1, 0 }) {
-		auto& d = const_cast<Eigen::TensorBase<derived>&>(res);
-		for(idx i = 0; i < a.dimension(0); i++) {
-			for(idx j = 0; j < b.dimension(0); j++) {
-				d.chip(i * b.dimension(0) + j, 0) = a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims }) + c.chip(i * b.dimension(0) + j, 0);
+	
+	inline void fma_r(Tensor& c, const Tensor& a, const Tensor& b, const Tensor& d, shp2 dims = { 1, 0 }) {
+		for(idx i = 0; i < a.dimension(2); i++) {
+			for(idx j = 0; j < b.dimension(2); j++) {
+				c.chip(i * b.dimension(2) + j, 2) = a.chip(i, 2).contract(b.chip(j, 2), dim2<1>{ dims }) + d.chip(i * b.dimension(2) + j, 2);
 			}
 		}
 		//return d;
 	}
-	template <class derived>
-	inline void acc_mul(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
-		for(idx i = 0; i < a.dimension(0); i++) {
-			for(idx j = 0; j < b.dimension(0); j++) {
-				c.chip(i * b.dimension(0) + j, 0) += a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{ dims });
+	
+	inline void acc_mul(Tensor& c, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+		
+		for(idx i = 0; i < a.dimension(2); i++) {
+			for(idx j = 0; j < b.dimension(2); j++) {
+				c.chip(i * b.dimension(2) + j, 2) += a.chip(i, 2).contract(b.chip(j, 2), dim2<1>{ dims });
 			}
 		}
 		//return d;
 	}
 	//multiply all matrix combinations and accumulate as a0b0 + a0b1, a1b0 + a1b1....
-	template <class derived>
-	inline void mul_acc_r(const TensorBase<derived>& res, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
-		auto& c = const_cast<Eigen::TensorBase<derived>&>(res);
+	
+	inline void mul_acc_r(Tensor& c, const Tensor& a, const Tensor& b, shp2 dims = { 1, 0 }) {
+		
 		c.setZero();
-		for(idx i = 0; i < a.dimension(0); i++) {
-			for(idx j = 0; j < b.dimension(0); j++) {
-				c.chip(i, 0) += a.chip(i, 0).contract(b.chip(j, 0), dim2<1>{dims});
+		for(idx i = 0; i < a.dimension(2); i++) {
+			for(idx j = 0; j < b.dimension(2); j++) {
+				c.chip(i, 2) += a.chip(i, 2).contract(b.chip(j, 2), dim2<1>{dims});
 			}
 		}
 	}
 	//convolute and accumulate filters -> b / a filters (b HAS to be multiple of a)
-	inline void pool_max_r(Reshape c, const Tensor& a, shp2 ker, shp2 str = 1) {
+	inline void pool_max_r(Tensor& c, const Tensor& a, shp2 ker, shp2 str = 1) {
 		idx d0 = a.dimension(0);
 		idx d1 = c_dim(a.dimension(1), ker[0], str[0], 0);
 		idx d2 = c_dim(a.dimension(2), ker[1], str[1], 0);

@@ -414,3 +414,96 @@ idx main() {
 	printnp(fsca((y1 - y3).mean()));
 }
 #else
+
+template <typename TensorType>
+void conv2d1(TensorType& output, const TensorType& input, const Tenarr& kernel, shp2 stride = 1, shp2 dilate = 1, Eigen::PaddingType padding_type = Eigen::PADDING_SAME) {
+	const auto NumDims = input.NumDimensions;
+	const auto kernelFilters = kernel.dimension(0);
+	const auto kernelChannels = kernel.dimension(1);
+	const auto kernelRows = kernel.dimension(2);
+	const auto kernelCols = kernel.dimension(3);
+	const auto kernel_dims = dim1<2>{ kernelFilters, kernelChannels * kernelRows * kernelCols };
+	const auto InputRows = input.dimension(1);
+	const auto InputCols = input.dimension(2);
+	const auto kernelRowsEff = kernelRows + (kernelRows - 1) * (dilate[0] - 1);
+	const auto kernelColsEff = kernelCols + (kernelCols - 1) * (dilate[0] - 1);
+	auto out_height = 0;
+	auto out_width = 0;
+	switch(padding_type) {
+		case Eigen::PADDING_VALID:
+			out_height = ceil((InputRows - kernelRowsEff + 1.f) / static_cast<float>(stride[0]));
+			out_width = ceil((InputCols - kernelColsEff + 1.f) / static_cast<float>(stride[1]));
+			break;
+		case Eigen::PADDING_SAME:
+			out_height = ceil(InputRows / static_cast<float>(stride[0]));
+			out_width = ceil(InputCols / static_cast<float>(stride[1]));
+			break;
+		default:
+			out_height = 0;
+			out_width = 0;
+			eigen_assert(false && "unexpected padding");
+	}
+	dim1<2> pre_contract_dims;
+	pre_contract_dims[0] = kernelChannels * kernelRows * kernelCols;
+	pre_contract_dims[1] = out_height * out_width;
+	for(int i = 3; i < NumDims; ++i) {
+		pre_contract_dims[1] *= input.dimension(i);
+	}
+	dim1<3> post_contract_dims;
+	post_contract_dims[0] = kernelFilters;
+	post_contract_dims[1] = out_height;
+	post_contract_dims[2] = out_width;
+	for(int i = 3; i < NumDims; ++i) {
+		post_contract_dims[i] = input.dimension(i);
+	}
+	dim2<1> contract_dims{ shp2(1, 0) };
+	auto patches = input.extract_image_patches(kernelRows, kernelCols, stride[0], stride[1], dilate[0], dilate[1], padding_type).reshape(pre_contract_dims);
+	output = kernel.reshape(kernel_dims).contract(patches, contract_dims).reshape(post_contract_dims);
+}
+
+template <typename TensorType>
+void conv2d2(TensorType& output, const TensorType& input, const Tenarr& kernel, shp2 stride = 1, shp2 dilate = 1, Eigen::PaddingType padding_type = Eigen::PADDING_SAME) {
+	const auto NumDims = input.NumDimensions;
+	const auto kernelFilters = kernel.dimension(3);
+	const auto kernelChannels = kernel.dimension(0);
+	const auto kernelRows = kernel.dimension(1);
+	const auto kernelCols = kernel.dimension(2);
+	const auto kernel_dims = dim1<2>{ kernelChannels * kernelRows * kernelCols, kernelFilters };
+	const auto InputRows = input.dimension(1);
+	const auto InputCols = input.dimension(2);
+	const auto kernelRowsEff = kernelRows + (kernelRows - 1) * (dilate[0] - 1);
+	const auto kernelColsEff = kernelCols + (kernelCols - 1) * (dilate[0] - 1);
+	auto out_height = 0;
+	auto out_width = 0;
+	switch(padding_type) {
+		case Eigen::PADDING_VALID:
+			out_height = ceil((InputRows - kernelRowsEff + 1.f) / static_cast<float>(stride[0]));
+			out_width = ceil((InputCols - kernelColsEff + 1.f) / static_cast<float>(stride[1]));
+			break;
+		case Eigen::PADDING_SAME:
+			out_height = ceil(InputRows / static_cast<float>(stride[0]));
+			out_width = ceil(InputCols / static_cast<float>(stride[1]));
+			break;
+		default:
+			out_height = 0;
+			out_width = 0;
+			eigen_assert(false && "unexpected padding");
+	}
+	dim1<2> pre_contract_dims;
+	pre_contract_dims[0] = kernelChannels * kernelRows * kernelCols;
+	pre_contract_dims[1] = out_height * out_width;
+	for(int i = 3; i < NumDims; ++i) {
+		pre_contract_dims[1] *= input.dimension(i);
+	}
+	dim1<3> post_contract_dims;
+	post_contract_dims[0] = kernelFilters;
+	post_contract_dims[1] = out_height;
+	post_contract_dims[2] = out_width;
+	for(int i = 3; i < NumDims; ++i) {
+		post_contract_dims[i] = input.dimension(i);
+	}
+	dim2<1> contract_dims{ shp2(0, 0) };
+	auto patches = input.extract_image_patches(kernelRows, kernelCols, stride[0], stride[1], dilate[0], dilate[1], padding_type).reshape(pre_contract_dims);
+	output = kernel.reshape(kernel_dims).contract(patches, contract_dims).reshape(post_contract_dims);
+
+}

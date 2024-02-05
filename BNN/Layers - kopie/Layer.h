@@ -88,7 +88,8 @@ namespace BNN {
 		}
 		//distribution more likely to generate small values
 		static void squared_init(Tensor& w, float range) {
-			w = range * (2.f * w.random().square() - 1.f);
+			w = (2.f * w.random() - 1.f);
+			w = range * w.sign() * w.square();
 		}
 		static void xavier_init(Tensor& w, float fin, float fout) {
 			w = sqrtf(6.0f / (fin + fout)) * (2.f * w.random() - 1.f);

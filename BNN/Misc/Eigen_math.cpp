@@ -1,9 +1,89 @@
 #include "Eigen_util.h"
+#include "Eigen_math.h"
 namespace BNN {
 	constexpr int CACHE_SIZE = 4096;
 	//Classic convolution of N input channels with N*K filters
+	void conv2d(Tensor& out, const Tensor& inp, const Tensor& ker, shp2 st, shp2 pa, shp2 dil) {
+		idx ich = inp.dimension(0);
+		idx och = ker.dimension(0) / ich;
+		idx ker_w = ker.dimension(1);
+		idx ker_h = ker.dimension(2);
+		idx out_w = out.dimension(1);
+		idx out_h = out.dimension(2);
+		dim1<2> kernel_dims{ och, ker_w * ker_h * ich };
+		auto patch = inp.extract_image_patches(ker_w, ker_h, st[0], st[1], dil[0], dil[1], 1, 1, pa[0], pa[0], pa[1], pa[1], 0)
+			.reshape(dim1<2>{ker_w* ker_h* ich, out_w* out_h});
+		out = ker.reshape(kernel_dims).contract(patch, dim2<1>{shp2{ 1, 0 }}, Eigen::NoOpOutputKernel()).reshape(out.dimensions());
+	}
+	void conv2d_igrad(Tensor& inp, const Tensor& out, const Tensor& ker, shp2 st, shp2 pa, shp2 dil) {
+		idx och = out.dimension(0);
+		idx ich = inp.dimension(0);
+		idx ker_w = ker.dimension(1);
+		idx ker_h = ker.dimension(2);
+		idx in_w = inp.dimension(1);
+		idx in_h = inp.dimension(2);
+		auto _ker = ker.reverse(dimx<bool, 3>{false, true, true}).reshape(dim1<4>{och, ich, ker_w, ker_h}).shuffle(dim1<4>{1, 0, 2, 3});
 
-	void convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		dim1<2> kernel_dims{ ich, ker_w * ker_h * och };
+		auto patch = out.extract_image_patches(ker_w, ker_h, st[0], st[1], dil[0], dil[1], 1, 1, pa[0], pa[0], pa[1], pa[1], 0).reshape(dim1<2>{ker_w* ker_h* och, in_w* in_h});
+		inp = _ker.reshape(kernel_dims).eval().contract(patch, dim2<1>{shp2{ 1, 0 }}, Eigen::NoOpOutputKernel()).reshape(inp.dimensions());
+	}
+	void conv2d_wgrad(Tensor& ker, const Tensor& inp, const Tensor& out, shp2 st, shp2 pa, shp2 dil) {
+		// W(och, ich, w, h)
+		idx ich = inp.dimension(0);
+		idx och = out.dimension(0);
+		idx out_w = out.dimension(1);
+		idx out_h = out.dimension(2);
+		idx in_w = inp.dimension(1);
+		idx in_h = inp.dimension(2);
+		if(ich * och > 4 * CACHE_SIZE) return;
+		alignas(64) float tmp[4 * CACHE_SIZE];
+		if(dil[0] <= 1 && dil[1] <= 1) {
+			for(idx i = -pa[1], o = 0; i < (in_h + pa[1] - out_h + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (in_w + pa[0] - out_w + 1); j += st[0], p++) {
+					memset(tmp, 0, och * ich * sizeof(float));
+					idx clip_l = max(0, i + out_h - in_h);
+					idx clip_m = max(0, j + out_w - in_w);
+					for(idx l = max(-i, 0); l < out_h - clip_l; l++) {
+						for(idx m = max(-j, 0); m < out_w - clip_m; m++) {
+							for(idx n = 0; n < ich; n++) {
+								for(idx k = 0; k < och; k++) {
+									tmp[k + n * och] += inp(n, j + m, i + l) * out(k, m, l);
+								}
+							}
+						}
+					}
+					for(idx ch = 0; ch < och * ich; ch++)
+						ker(ch, p, o) += tmp[ch];
+				}
+			}
+		}
+		else {
+			out_w = out_w * dil[0] - dil[0] + 1;
+			out_h = out_h * dil[1] - dil[1] + 1;
+			for(idx i = -pa[1], o = 0; i < (in_h + pa[1] - out_h + 1); i += st[1], o++) {
+				for(idx j = -pa[0], p = 0; j < (in_w + pa[0] - out_w + 1); j += st[0], p++) {
+					memset(tmp, 0, och * ich * sizeof(float));
+					idx clip_l = max(0, i + out_h - in_h);
+					idx clip_m = max(0, j + out_w - in_w);
+					for(idx l = max(-i, 0); l < out_h - clip_l; l++) {
+						for(idx m = max(-j, 0); m < out_w - clip_m; m++) {
+							for(idx n = 0; n < ich; n++) {
+								for(idx k = 0; k < och; k++) {
+									tmp[k + n * och] += inp(n, j + m, i + l) * out(k, m, l);
+								}
+							}
+						}
+					}
+					for(idx ch = 0; ch < och * ich; ch++)
+						ker(ch, p, o) += tmp[ch];
+				}
+			}
+		}
+	}
+
+	void convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		return conv2d(c, a, b, st, pa);
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
 		if(och > CACHE_SIZE) return;
@@ -11,7 +91,7 @@ namespace BNN {
 		if(ich <= 1 && och <= 1) {
 			if(st[0] <= 1 && st[1] <= 1) {
 				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
-				c.data.reshape(c.dim).chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
+				c.chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
 			}
 			else {
 				float tmp;
@@ -89,7 +169,8 @@ namespace BNN {
 	//stupid me
 	//It was convolving for example 4 output filters by 4 first filters of the kernel which werent the filters corresponding to the input !!!
 
-	void rev_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void rev_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		return conv2d_igrad(c, a, b, st, pa);
 		idx ich = a.dimension(0);
 		idx och = b.dimension(0) / ich;
 		idx bdm = b.dimension(1);
@@ -99,7 +180,7 @@ namespace BNN {
 		if(ich <= 1 && och <= 1) {
 			if(st[0] <= 1 && st[1] <= 1) {
 				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
-				c.data.reshape(c.dim).chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0).reverse(dimx<bool, 2>{true, true}), dim1<2>{0, 1});
+				c.chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0).reverse(dimx<bool, 2>{true, true}), dim1<2>{0, 1});
 			}
 			else {
 				float tmp;
@@ -175,16 +256,16 @@ namespace BNN {
 	}
 	//Convolve all filter combinations, N channels, K filters, N*K output channels
 
-	void all_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void all_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
 		idx och = ach * bch;
-		if(och > CACHE_SIZE) return;
-		alignas(64) float tmp[CACHE_SIZE];
+		if(och > 4 * CACHE_SIZE) return;
+		alignas(64) float tmp[4 * CACHE_SIZE];
 		if(ach <= 1 && bch <= 1) {
 			if(st[0] <= 1 && st[1] <= 1) {
 				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
-				c.data.reshape(c.dim).chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
+				c.chip(0, 0) = a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
 			}
 			else {
 				float tmp;
@@ -259,16 +340,17 @@ namespace BNN {
 	}
 	//Convolve all combinations and accumulate to output
 
-	void acc_convolve(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void acc_convolve(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+		return conv2d_wgrad(c, a, b, st, pa);
 		idx ach = a.dimension(0);
 		idx bch = b.dimension(0);
 		idx och = ach * bch;
-		if(och > CACHE_SIZE) return;
-		alignas(64) float tmp[CACHE_SIZE];
+		if(och > 4 * CACHE_SIZE) return;
+		alignas(64) float tmp[4 * CACHE_SIZE];
 		if(ach <= 1 && bch <= 1) {
 			if(st[0] <= 1 && st[1] <= 1) {
 				dim2<2> pad{ shp2{ pa[0], pa[0]}, shp2{ pa[1], pa[1] } };
-				c.data.reshape(c.dim).chip(0, 0) += a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
+				c.chip(0, 0) += a.chip(0, 0).pad(pad).convolve(b.chip(0, 0), dim1<2>{0, 1});
 			}
 			else {
 				float tmp;
@@ -346,7 +428,7 @@ namespace BNN {
 	}
 	//Convolve each input with each channel
 
-	void convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		if(ich > CACHE_SIZE) return;
 		alignas(64) float tmp[CACHE_SIZE];
@@ -367,7 +449,7 @@ namespace BNN {
 		}
 	}
 
-	void rev_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void rev_convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		if(ich > CACHE_SIZE) return;
 		alignas(64) float tmp[CACHE_SIZE];
@@ -389,7 +471,7 @@ namespace BNN {
 		}
 	}
 
-	void acc_convolve_1to1(Reshape c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
+	void acc_convolve_1to1(Tensor& c, const Tensor& a, const Tensor& b, shp2 st, shp2 pa) {
 		idx ich = a.dimension(0);
 		if(ich > CACHE_SIZE) return;
 		alignas(64) float tmp[CACHE_SIZE];
@@ -411,7 +493,7 @@ namespace BNN {
 		}
 	}
 	//bilinear resize
-	void resize_r(Reshape y, const Tensor& x, Interpol filter) {
+	void resize_r(TensRef y, const Tensor& x, Interpol filter) {
 		if(y.dim[0] != x.dimension(0) || y.dim[0] > CACHE_SIZE) return;
 		alignas(64) float tmp[CACHE_SIZE];
 		float s1 = y.dim[1] > 0 ? float(x.dimension(1)) / (y.dim[1]) : 0;
@@ -474,5 +556,5 @@ namespace BNN {
 		}
 	}
 	//multiply all matrix combinations stored as a0b0,a0b1,a1b0,a1b1....
-	
+
 }

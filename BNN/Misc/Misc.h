@@ -5,6 +5,14 @@
 #include <memory>
 #include <cmath>
 #include <syncstream>
+
+#if defined(__clang__)
+#define restrict __restrict
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define restrict __restrict__
+#elif defined(_MSC_VER)
+#define restrict __restrict
+#endif
 //stupid C++ doesnt provide a way for automatic spacing in ostream...
 #define SPC <<' '<<
 namespace BNN {

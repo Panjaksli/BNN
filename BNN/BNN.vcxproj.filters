@@ -116,5 +116,8 @@
     <ClInclude Include="Layers\Shape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Misc\TF_Eigen_math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
